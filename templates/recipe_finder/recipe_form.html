@@ -1,0 +1,623 @@
+{% extends 'recipe_finder/base.html' %}
+{% load static %}
+{% block title %}{% if editing %}Edit{% else %}Create{% endif %} Recipe - RecipeFinder{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="recipe-form-container">
+    <div class="form-header">
+        <h1>{% if editing %}Edit{% else %}Create{% endif %} Recipe</h1>
+        <p>{% if editing %}Update your recipe details{% else %}Share your culinary creation with the world{% endif %}</p>
+    </div>
+    
+    <div class="form-progress-tracker">
+        <div class="progress-step active" data-step="basic-info">
+            <span class="step-number">1</span>
+            <span class="step-label">Basic Info</span>
+        </div>
+        <div class="progress-step" data-step="ingredients-instructions">
+            <span class="step-number">2</span>
+            <span class="step-label">Ingredients & Instructions</span>
+        </div>
+        <div class="progress-step" data-step="images-media">
+            <span class="step-number">3</span>
+            <span class="step-label">Images</span>
+        </div>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" class="recipe-form" id="recipe-form">
+        {% csrf_token %}
+        
+        <div class="form-step" id="basic-info">
+            <div class="form-section">
+                <h2>Basic Information</h2>
+                
+                <div class="form-group">
+                    <label for="{{ recipe_form.title.id_for_label }}">Recipe Title*</label>
+                    {{ recipe_form.title }}
+                    <div class="char-counter"><span id="title-chars">0</span>/100</div>
+                    {% for error in recipe_form.title.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ recipe_form.description.id_for_label }}">Description*</label>
+                    {{ recipe_form.description }}
+                    <div class="char-counter"><span id="description-chars">0</span>/500</div>
+                    <small class="form-text text-muted">Describe your recipe in a few sentences. What makes it special?</small>
+                    {% for error in recipe_form.description.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="{{ recipe_form.cooking_time.id_for_label }}">Cooking Time (mins)*</label>
+                        {{ recipe_form.cooking_time }}
+                        {% for error in recipe_form.cooking_time.errors %}
+                            <div class="error-message">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="form-group col-md-4">
+                        <label for="{{ recipe_form.prep_time.id_for_label }}">Prep Time (mins)*</label>
+                        {{ recipe_form.prep_time }}
+                        {% for error in recipe_form.prep_time.errors %}
+                            <div class="error-message">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="form-group col-md-4">
+                        <label for="{{ recipe_form.servings.id_for_label }}">Servings*</label>
+                        {{ recipe_form.servings }}
+                        {% for error in recipe_form.servings.errors %}
+                            <div class="error-message">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ recipe_form.difficulty.id_for_label }}">Difficulty Level*</label>
+                    {{ recipe_form.difficulty }}
+                    {% for error in recipe_form.difficulty.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ recipe_form.categories.id_for_label }}">Categories*</label>
+                    {{ recipe_form.categories }}
+                    <small class="form-text text-muted">Select all categories that apply to your recipe.</small>
+                    {% for error in recipe_form.categories.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="form-navigation">
+                <button type="button" class="btn btn-primary next-step">Next: Ingredients & Instructions</button>
+            </div>
+        </div>
+        
+        <div class="form-step" id="ingredients-instructions" style="display: none;">
+            <div class="form-section">
+                <h2>Ingredients & Instructions</h2>
+                
+                <div class="form-group">
+                    <label>Ingredients*</label>
+                    <div class="ingredients-container">
+                        <div class="ingredients-list">
+                            <div class="ingredient-item">
+                                <input type="text" class="ingredient-input" placeholder="e.g. 2 cups flour">
+                                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <button type="button" class="add-ingredient-btn"><i class="fas fa-plus"></i> Add Ingredient</button>
+                    </div>
+                    {{ recipe_form.ingredients.as_hidden }}
+                    {% for error in recipe_form.ingredients.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="form-group">
+                    <label>Instructions*</label>
+                    <div class="instructions-container">
+                        <div class="instructions-list">
+                            <div class="instruction-item">
+                                <span class="step-number">1</span>
+                                <textarea class="instruction-input" placeholder="Describe this step..."></textarea>
+                                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <button type="button" class="add-instruction-btn"><i class="fas fa-plus"></i> Add Step</button>
+                    </div>
+                    {{ recipe_form.instructions.as_hidden }}
+                    {% for error in recipe_form.instructions.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="form-navigation">
+                <button type="button" class="btn btn-outline prev-step">Back</button>
+                <button type="button" class="btn btn-primary next-step">Next: Images</button>
+            </div>
+        </div>
+        
+        <div class="form-step" id="images-media" style="display: none;">
+            <div class="form-section">
+                <h2>Images & Media</h2>
+                
+                {% if editing and recipe.images.exists %}
+                    <div class="current-images">
+                        <h3>Current Images</h3>
+                        <div class="image-grid">
+                            {% for img in recipe.images.all %}
+                                <div class="image-item">
+                                    <img src="{{ img.image.url }}" alt="{{ recipe.title }}">
+                                    <div class="image-caption">{{ img.caption|default:"No caption" }}</div>
+                                    <div class="image-actions">
+                                        {% if img.is_primary %}
+                                            <span class="primary-badge">Primary Image</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <div class="image-upload-container">
+                    <div class="image-preview-area">
+                        <div class="image-dropzone" id="image-dropzone">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Drag & drop image here or click to browse</p>
+                        </div>
+                        <div class="image-preview" style="display: none;">
+                            <img id="preview-img" src="#" alt="Preview">
+                            <button type="button" class="remove-image-btn"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="image-details">
+                        <div class="form-group">
+                            <label for="{{ image_form.image.id_for_label }}">Image File*</label>
+                            {{ image_form.image }}
+                            <small class="form-text text-muted">Upload a high-quality image of your finished recipe. Recommended size: 1200×800px.</small>
+                            {% for error in image_form.image.errors %}
+                                <div class="error-message">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ image_form.caption.id_for_label }}">Image Caption</label>
+                            {{ image_form.caption }}
+                            <small class="form-text text-muted">Add a short caption for your image (optional).</small>
+                        </div>
+                        
+                        <div class="form-group form-check">
+                            {{ image_form.is_primary }}
+                            <label class="form-check-label" for="{{ image_form.is_primary.id_for_label }}">
+                                Set as primary image
+                            </label>
+                            <small class="form-text text-muted">This will be the main image shown on recipe cards and listings.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-navigation">
+                <button type="button" class="btn btn-outline prev-step">Back</button>
+                <button type="submit" class="btn btn-primary">
+                    {% if editing %}Save Changes{% else %}Create Recipe{% endif %}
+                </button>
+                <a href="{% if editing %}{% url 'recipe_detail' recipe.slug %}{% else %}{% url 'recipe_list' %}{% endif %}" class="btn btn-outline">
+                    Cancel
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Select2 for categories
+        $('#{{ recipe_form.categories.id_for_label }}').select2({
+            placeholder: "Select categories",
+            width: '100%',
+            theme: "classic"
+        });
+        
+        // Character counters
+        const titleField = document.querySelector('#{{ recipe_form.title.id_for_label }}');
+        const titleCounter = document.querySelector('#title-chars');
+        const descField = document.querySelector('#{{ recipe_form.description.id_for_label }}');
+        const descCounter = document.querySelector('#description-chars');
+        
+        function updateCharCounter(field, counter) {
+            const currentLength = field.value.length;
+            counter.textContent = currentLength;
+            
+            if (field === titleField && currentLength > 100) {
+                counter.classList.add('text-danger');
+            } else if (field === descField && currentLength > 500) {
+                counter.classList.add('text-danger');
+            } else {
+                counter.classList.remove('text-danger');
+            }
+        }
+        
+        if (titleField) {
+            updateCharCounter(titleField, titleCounter);
+            titleField.addEventListener('input', () => updateCharCounter(titleField, titleCounter));
+        }
+        
+        if (descField) {
+            updateCharCounter(descField, descCounter);
+            descField.addEventListener('input', () => updateCharCounter(descField, descCounter));
+        }
+        
+        // Multi-step form navigation
+        const steps = document.querySelectorAll('.form-step');
+        const progressSteps = document.querySelectorAll('.progress-step');
+        const nextButtons = document.querySelectorAll('.next-step');
+        const prevButtons = document.querySelectorAll('.prev-step');
+        
+        let currentStep = 0;
+        
+        function showStep(stepIndex) {
+            steps.forEach((step, index) => {
+                if (index === stepIndex) {
+                    step.style.display = 'block';
+                } else {
+                    step.style.display = 'none';
+                }
+            });
+            
+            progressSteps.forEach((step, index) => {
+                if (index <= stepIndex) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
+            });
+            
+            // Scroll to top of the form
+            const formContainer = document.querySelector('.recipe-form-container');
+            formContainer.scrollIntoView({ behavior: 'smooth' });
+            
+            currentStep = stepIndex;
+        }
+        
+        function validateStep(stepIndex) {
+            if (stepIndex === 0) {
+                const title = titleField.value.trim();
+                const description = descField.value.trim();
+                
+                if (!title) {
+                    alert('Please enter a recipe title');
+                    return false;
+                }
+                
+                if (!description) {
+                    alert('Please provide a recipe description');
+                    return false;
+                }
+                
+                return true;
+            }
+            
+            if (stepIndex === 1) {
+                const ingredients = document.querySelectorAll('.ingredient-input');
+                const instructions = document.querySelectorAll('.instruction-input');
+                
+                if (ingredients.length === 0) {
+                    alert('Please add at least one ingredient');
+                    return false;
+                }
+                
+                if (instructions.length === 0) {
+                    alert('Please add at least one instruction step');
+                    return false;
+                }
+                
+                // Check if any ingredient fields are empty
+                for (let i = 0; i < ingredients.length; i++) {
+                    if (!ingredients[i].value.trim()) {
+                        alert('Please fill in all ingredient fields or remove empty ones');
+                        return false;
+                    }
+                }
+                
+                // Check if any instruction fields are empty
+                for (let i = 0; i < instructions.length; i++) {
+                    if (!instructions[i].value.trim()) {
+                        alert('Please fill in all instruction steps or remove empty ones');
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+            
+            return true;
+        }
+        
+        nextButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                if (validateStep(currentStep)) {
+                    showStep(currentStep + 1);
+                }
+            });
+        });
+        
+        prevButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                showStep(currentStep - 1);
+            });
+        });
+        
+        progressSteps.forEach((step, index) => {
+            step.addEventListener('click', function() {
+                if (index < currentStep || validateStep(currentStep)) {
+                    showStep(index);
+                }
+            });
+        });
+        
+        // Dynamic ingredient management
+        const ingredientsContainer = document.querySelector('.ingredients-list');
+        const ingredientsHiddenField = document.querySelector('#{{ recipe_form.ingredients.id_for_label }}');
+        const addIngredientButton = document.querySelector('.add-ingredient-btn');
+        
+        function updateIngredientsField() {
+            const ingredientInputs = document.querySelectorAll('.ingredient-input');
+            const ingredients = Array.from(ingredientInputs).map(input => input.value.trim()).filter(value => value !== '');
+            ingredientsHiddenField.value = ingredients.join('\n');
+        }
+        
+        function addIngredient(value = '') {
+            const ingredientItem = document.createElement('div');
+            ingredientItem.className = 'ingredient-item';
+            ingredientItem.innerHTML = `
+                <input type="text" class="ingredient-input" placeholder="e.g. 2 cups flour" value="${value}">
+                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+            `;
+            
+            const removeBtn = ingredientItem.querySelector('.remove-item-btn');
+            removeBtn.addEventListener('click', function() {
+                ingredientItem.remove();
+                updateIngredientsField();
+            });
+            
+            const input = ingredientItem.querySelector('.ingredient-input');
+            input.addEventListener('input', updateIngredientsField);
+            
+            ingredientsContainer.appendChild(ingredientItem);
+            
+            if (value === '') {
+                input.focus();
+            }
+            
+            updateIngredientsField();
+        }
+        
+        addIngredientButton.addEventListener('click', function() {
+            addIngredient();
+        });
+        
+        // Initialize ingredients from hidden field
+        if (ingredientsHiddenField.value) {
+            // Clear the default ingredient item
+            ingredientsContainer.innerHTML = '';
+            
+            const ingredients = ingredientsHiddenField.value.split('\n');
+            ingredients.forEach(ingredient => {
+                if (ingredient.trim()) {
+                    addIngredient(ingredient);
+                }
+            });
+        }
+        
+        // Dynamic instruction management
+        const instructionsContainer = document.querySelector('.instructions-list');
+        const instructionsHiddenField = document.querySelector('#{{ recipe_form.instructions.id_for_label }}');
+        const addInstructionButton = document.querySelector('.add-instruction-btn');
+        
+        function updateInstructionsField() {
+            const instructionInputs = document.querySelectorAll('.instruction-input');
+            const instructions = Array.from(instructionInputs).map(input => input.value.trim()).filter(value => value !== '');
+            instructionsHiddenField.value = instructions.join('\n');
+        }
+        
+        function updateStepNumbers() {
+            const steps = document.querySelectorAll('.instruction-item .step-number');
+            steps.forEach((step, index) => {
+                step.textContent = index + 1;
+            });
+        }
+        
+        function addInstruction(value = '') {
+            const instructionItem = document.createElement('div');
+            instructionItem.className = 'instruction-item';
+            
+            // Calculate the step number
+            const currentSteps = document.querySelectorAll('.instruction-item').length;
+            
+            instructionItem.innerHTML = `
+                <span class="step-number">${currentSteps + 1}</span>
+                <textarea class="instruction-input" placeholder="Describe this step...">${value}</textarea>
+                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+            `;
+            
+            const removeBtn = instructionItem.querySelector('.remove-item-btn');
+            removeBtn.addEventListener('click', function() {
+                instructionItem.remove();
+                updateStepNumbers();
+                updateInstructionsField();
+            });
+            
+            const textarea = instructionItem.querySelector('.instruction-input');
+            textarea.addEventListener('input', updateInstructionsField);
+            
+            instructionsContainer.appendChild(instructionItem);
+            
+            if (value === '') {
+                textarea.focus();
+            }
+            
+            updateInstructionsField();
+        }
+        
+        addInstructionButton.addEventListener('click', function() {
+            addInstruction();
+        });
+        
+        // Initialize instructions from hidden field
+        if (instructionsHiddenField.value) {
+            // Clear the default instruction item
+            instructionsContainer.innerHTML = '';
+            
+            const instructions = instructionsHiddenField.value.split('\n');
+            instructions.forEach(instruction => {
+                if (instruction.trim()) {
+                    addInstruction(instruction);
+                }
+            });
+        }
+        
+        // Enhanced image upload
+        const dropzone = document.getElementById('image-dropzone');
+        const imageInput = document.querySelector('#{{ image_form.image.id_for_label }}');
+        const previewImg = document.getElementById('preview-img');
+        const previewContainer = document.querySelector('.image-preview');
+        const removeImageBtn = document.querySelector('.remove-image-btn');
+        
+        // Handle drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropzone.classList.add('highlight');
+        }
+        
+        function unhighlight() {
+            dropzone.classList.remove('highlight');
+        }
+        
+        dropzone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            
+            if (file) {
+                imageInput.files = dt.files;
+                handleImagePreview(file);
+            }
+        }
+        
+        // Click to browse
+        dropzone.addEventListener('click', function() {
+            imageInput.click();
+        });
+        
+        // Handle file input change
+        imageInput.addEventListener('change', function() {
+            if (this.files[0]) {
+                handleImagePreview(this.files[0]);
+            }
+        });
+        
+        function handleImagePreview(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                dropzone.style.display = 'none';
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Remove image
+        removeImageBtn.addEventListener('click', function() {
+            imageInput.value = '';
+            previewContainer.style.display = 'none';
+            dropzone.style.display = 'flex';
+        });
+        
+        // Form submission
+        const form = document.getElementById('recipe-form');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Final validation
+            // Step 1
+            const title = titleField.value.trim();
+            const description = descField.value.trim();
+            
+            if (!title) {
+                alert('Please enter a recipe title');
+                showStep(0);
+                return;
+            }
+            
+            if (!description) {
+                alert('Please provide a recipe description');
+                showStep(0);
+                return;
+            }
+            
+            // Step 2
+            const ingredients = document.querySelectorAll('.ingredient-input');
+            const instructions = document.querySelectorAll('.instruction-input');
+            
+            if (ingredients.length === 0) {
+                alert('Please add at least one ingredient');
+                showStep(1);
+                return;
+            }
+            
+            if (instructions.length === 0) {
+                alert('Please add at least one instruction step');
+                showStep(1);
+                return;
+            }
+            
+            // Update hidden fields one last time
+            updateIngredientsField();
+            updateInstructionsField();
+            
+            // Submit the form
+            this.submit();
+        });
+    });
+</script>
+{% endblock %}

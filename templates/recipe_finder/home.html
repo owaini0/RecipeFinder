@@ -1,0 +1,152 @@
+{% extends 'recipe_finder/base.html' %}
+{% load static %}
+
+{% block title %}RecipeFinder - Your Home for Recipes{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="columnLeft">
+            <div class="main-content">
+                <h2 class="titleDiscover">
+                    Discover & Save Your Favorite Recipes
+                </h2>
+                <p class="descriptionDiscover">Explore a world of flavors with Recipe Finder. Browse through a
+                    variety of recipes, from home-cooked meals to international delights. Save your favorites, try new dishes, and bring
+                    the taste of home to your kitchen.</p>
+
+                <div class="buttons">
+                    <button class="find-recipe">
+                        <a href="{% url 'recipe_list' %}"><i class="fas fa-search"></i> Find Recipe</a>
+                    </button>
+                    {% if not user.is_authenticated %}
+                    <button class="learn-more">
+                        <a href="{% url 'register' %}"><i class="fas fa-user-plus"></i> Join Now</a>
+                    </button>
+                    {% else %}
+                    <button class="learn-more">
+                        <a href="{% url 'recipe_create' %}"><i class="fas fa-plus"></i> Create Recipe</a>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="columnRight">
+            <div class="image-box">
+                <img src="{% static 'images/hero-image.jpg' %}" alt="Delicious recipe" class="centered-image">
+            </div>
+        </div>
+    </div>
+
+    <section class="features">
+        <div class="features-heading">
+            <h2>Why Choose RecipeFinder?</h2>
+            <p>We make cooking fun, easy, and accessible to everyone</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>Easy to Find</h3>
+                <p>Search thousands of recipes with our powerful search tool. Filter by ingredients, cuisine, or
+                    dietary restrictions.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-bookmark"></i>
+                </div>
+                <h3>Save Favorites</h3>
+                <p>Create your personal collection of favorite recipes that you can access anytime, anywhere.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3>Quick & Simple</h3>
+                <p>Find recipes that match your schedule with prep time indicators and difficulty levels.</p>
+            </div>
+        </div>
+    </section>
+
+    {% if popular_recipes %}
+    <section class="popular-recipes">
+        <div class="section-heading">
+            <h2>Popular Recipes</h2>
+            <p>Most loved recipes by our community</p>
+        </div>
+        <div class="recipes-grid">
+            {% for recipe in popular_recipes %}
+                <div class="recipe-card">
+                    <div class="recipe-image">
+                        {% if recipe.images.exists %}
+                            <img src="{{ recipe.images.first.image.url }}" alt="{{ recipe.title }}">
+                        {% else %}
+                            <img src="{% static 'images/recipe-placeholder.jpg' %}" alt="{{ recipe.title }}">
+                        {% endif %}
+                        <div class="recipe-badge">
+                            <span class="difficulty-badge {{ recipe.difficulty }}">{{ recipe.get_difficulty_display }}</span>
+                            {% if recipe.author.profile.chef_verified %}
+                                <span class="chef-badge"><i class="fas fa-check-circle"></i> Chef</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="recipe-info">
+                        <h3><a href="{% url 'recipe_detail' recipe.slug %}">{{ recipe.title }}</a></h3>
+                        <div class="recipe-meta">
+                            <span><i class="far fa-clock"></i> {{ recipe.total_time }} min</span>
+                            <span><i class="far fa-heart"></i> {{ recipe.likes_count }}</span>
+                            <span><i class="far fa-comment"></i> {{ recipe.comments_count }}</span>
+                        </div>
+                        <p class="recipe-excerpt">{{ recipe.description|truncatechars:100 }}</p>
+                        <div class="recipe-author">
+                            <a href="{% url 'profile_with_username' recipe.author.username %}">
+                                {% if recipe.author.profile.profile_pic %}
+                                    <img src="{{ recipe.author.profile.profile_pic.url }}" alt="{{ recipe.author.username }}">
+                                {% else %}
+                                    <i class="fas fa-user-circle"></i>
+                                {% endif %}
+                                <span>{{ recipe.author.username }}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="view-more">
+            <a href="{% url 'recipe_list' %}?sort=popular" class="btn btn-outline">View More Recipes</a>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if newest_recipes %}
+    <section class="newest-recipes">
+        <div class="section-heading">
+            <h2>Fresh From the Kitchen</h2>
+            <p>Recently added recipes</p>
+        </div>
+        <div class="recipes-grid">
+            {% for recipe in newest_recipes %}
+                <div class="recipe-card">
+                    <div class="recipe-image">
+                        {% if recipe.images.exists %}
+                            <img src="{{ recipe.images.first.image.url }}" alt="{{ recipe.title }}">
+                        {% else %}
+                            <img src="{% static 'images/recipe-placeholder.jpg' %}" alt="{{ recipe.title }}">
+                        {% endif %}
+                        <div class="recipe-badge">
+                            <span class="difficulty-badge {{ recipe.difficulty }}">{{ recipe.get_difficulty_display }}</span>
+                        </div>
+                    </div>
+                    <div class="recipe-info">
+                        <h3><a href="{% url 'recipe_detail' recipe.slug %}">{{ recipe.title }}</a></h3>
+                        <div class="recipe-meta">
+                            <span><i class="far fa-clock"></i> {{ recipe.total_time }} min</span>
+                        </div>
+                        <p class="recipe-excerpt">{{ recipe.description|truncatechars:100 }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+{% endblock %}

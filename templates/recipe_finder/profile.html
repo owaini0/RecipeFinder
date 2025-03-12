@@ -1,0 +1,220 @@
+{% extends 'recipe_finder/base.html' %}
+
+{% block content %}
+<div class="container profile-container">
+    <div class="profile-header">
+        <div class="profile-info">
+            <div class="profile-avatar">
+                {% if profile.profile_pic %}
+                    <img src="{{ profile.profile_pic.url }}" alt="{{ profile.user.username }}">
+                {% else %}
+                    <div class="avatar-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="profile-details">
+                <h1>{{ profile.user.username }}</h1>
+                
+                {% if profile.full_name %}
+                    <p>{{ profile.full_name }}</p>
+                {% endif %}
+                
+                {% if profile.is_chef %}
+                    <div class="chef-badge">
+                        <i class="fas fa-utensils"></i>
+                        Chef
+                        {% if profile.chef_verified %}
+                            <i class="fas fa-check-circle ml-1"></i>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+                <div class="profile-stats">
+                    <div class="stat">
+                        <span class="stat-value">{{ recipes.count }}</span>
+                        <span class="stat-label">Recipes</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">{{ followers_count }}</span>
+                        <span class="stat-label">Followers</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">{{ following_count }}</span>
+                        <span class="stat-label">Following</span>
+                    </div>
+                </div>
+                
+                {% if user.is_authenticated and user != profile.user %}
+                    <button class="follow-btn {% if is_following %}following{% endif %}" data-user-id="{{ profile.user.id }}" data-following="{{ is_following|lower }}">
+                        {% if is_following %}
+                            <i class="fas fa-user-minus"></i> Unfollow
+                        {% else %}
+                            <i class="fas fa-user-plus"></i> Follow
+                        {% endif %}
+                    </button>
+                {% elif user == profile.user %}
+                    <a href="{% url 'edit_profile' %}" class="edit-profile-btn">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if profile.bio or profile.location or profile.website %}
+            <div class="profile-bio">
+                {% if profile.bio %}
+                    <p>{{ profile.bio }}</p>
+                {% endif %}
+                
+                <div class="profile-meta" style="margin-top: 10px;">
+                    {% if profile.location %}
+                        <span><i class="fas fa-map-marker-alt"></i> {{ profile.location }}</span>
+                    {% endif %}
+                    
+                    {% if profile.website %}
+                        <span style="margin-left: 15px;">
+                            <a href="{{ profile.website }}" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-globe"></i> Website
+                            </a>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="profile-content">
+        <div class="profile-nav">
+            <ul class="tab-list">
+                <li class="tab active" data-tab="recipes">Recipes</li>
+                <li class="tab" data-tab="collections">Collections</li>
+            </ul>
+        </div>
+        
+        <!-- Recipes Tab -->
+        <div id="recipes-tab" class="tab-content active">
+            {% if recipes %}
+                <div class="recipes-grid">
+                    {% for recipe in recipes %}
+                        <div class="recipe-card">
+                            <div class="recipe-image">
+                                {% if recipe.images.exists %}
+                                    <img src="{{ recipe.images.first.image.url }}" alt="{{ recipe.title }}">
+                                {% else %}
+                                    <img src="/media/recipe_images/default.jpg" alt="{{ recipe.title }}">
+                                {% endif %}
+                                
+                                <div class="recipe-badge">
+                                    <span class="difficulty-badge">{{ recipe.get_difficulty_display }}</span>
+                                </div>
+                            </div>
+                            <div class="recipe-info">
+                                <h3><a href="{% url 'recipe_detail' recipe.slug %}">{{ recipe.title }}</a></h3>
+                                <div class="recipe-meta">
+                                    <span><i class="far fa-clock"></i> {{ recipe.total_time }} min</span>
+                                    <span><i class="far fa-heart"></i> {{ recipe.likes_count }}</span>
+                                </div>
+                                <p class="recipe-excerpt">{{ recipe.description|truncatechars:100 }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-content">
+                    <i class="fas fa-utensils"></i>
+                    <h3>No recipes yet</h3>
+                    {% if user == profile.user %}
+                        <p>Create your first recipe and share it with the world!</p>
+                        <a href="{% url 'recipe_create' %}" class="btn btn-primary">Create Recipe</a>
+                    {% else %}
+                        <p>{{ profile.user.username }} hasn't added any recipes yet.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Collections Tab -->
+        <div id="collections-tab" class="tab-content">
+            {% if collections %}
+                <div class="collections-grid">
+                    {% for collection in collections %}
+                        <div class="collection-card">
+                            <div class="collection-cover">
+                                {% if collection.recipes.exists and collection.recipes.first.images.exists %}
+                                    <img src="{{ collection.recipes.first.images.first.image.url }}" alt="{{ collection.name }}">
+                                {% else %}
+                                    <img src="/media/recipe_images/collection-default.jpg" alt="{{ collection.name }}">
+                                {% endif %}
+                                <div class="collection-count">{{ collection.recipes.count }} recipes</div>
+                            </div>
+                            <div class="collection-info">
+                                <h3><a href="{% url 'collection_detail' collection.pk %}">{{ collection.name }}</a></h3>
+                                <p>{{ collection.description|truncatechars:100 }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-content">
+                    <i class="fas fa-folder"></i>
+                    <h3>No collections yet</h3>
+                    {% if user == profile.user %}
+                        <p>Create your first collection to organize your favorite recipes!</p>
+                        <a href="{% url 'collection_create' %}" class="btn btn-primary">Create Collection</a>
+                    {% else %}
+                        <p>{{ profile.user.username }} hasn't added any public collections yet.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Tab functionality
+    $('.tab').click(function() {
+        const tabId = $(this).data('tab');
+        
+        // Update active tab
+        $('.tab').removeClass('active');
+        $(this).addClass('active');
+        
+        // Show selected content
+        $('.tab-content').removeClass('active');
+        $(`#${tabId}-tab`).addClass('active');
+    });
+
+    // Follow/unfollow functionality
+    $('.follow-btn').click(function() {
+        const button = $(this);
+        const userId = button.data('user-id');
+        
+        $.ajax({
+            url: '{% url "follow_user" %}',
+            type: 'POST',
+            data: {
+                'user_id': userId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(data) {
+                if (data.following) {
+                    button.html('<i class="fas fa-user-minus"></i> Unfollow');
+                    button.addClass('following');
+                } else {
+                    button.html('<i class="fas fa-user-plus"></i> Follow');
+                    button.removeClass('following');
+                }
+                
+                // Update followers count
+                $('.stat:nth-child(2) .stat-value').text(data.followers_count);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

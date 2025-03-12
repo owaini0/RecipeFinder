@@ -1,0 +1,64 @@
+{% extends 'recipe_finder/base.html' %}
+{% load static %}
+
+{% block title %}Login - RecipeFinder{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-form-container">
+        <div class="auth-header">
+            <h2>Welcome Back</h2>
+            <p>Log in to your RecipeFinder account</p>
+        </div>
+        
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="remember-me" name="remember_me">
+                <label class="form-check-label" for="remember-me">Remember me</label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Log In</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="{% url 'register' %}">Sign Up</a></p>
+        </div>
+    </div>
+    
+    <div class="auth-info">
+        <h3>Welcome to RecipeFinder</h3>
+        <p>Log in to access your saved recipes, collections, and more!</p>
+        
+        <div class="auth-features">
+            <div class="feature">
+                <i class="fas fa-utensils"></i>
+                <span>Discover new recipes</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-book-open"></i>
+                <span>Access your cookbook</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-users"></i>
+                <span>Connect with chefs</span>
+            </div>
+        </div>
+        
+        <div class="auth-image">
+            <img src="{% static 'images/login-hero.jpg' %}" alt="Cooking" class="img-fluid">
+        </div>
+    </div>
+</div>
+{% endblock %}

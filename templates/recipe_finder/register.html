@@ -1,0 +1,53 @@
+{% extends 'recipe_finder/base.html' %}
+{% load static %}
+
+{% block title %}Register - RecipeFinder{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-form-container">
+        <div class="auth-header">
+            <h2>Create an Account</h2>
+            <p>Join our community of food enthusiasts</p>
+        </div>
+        
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="form-text text-muted">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" class="btn btn-primary">Sign Up</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{% url 'login' %}">Log In</a></p>
+        </div>
+    </div>
+    
+    <div class="auth-info">
+        <h3>Benefits of Joining</h3>
+        <ul class="benefits-list">
+            <li><i class="fas fa-heart"></i> Save your favorite recipes</li>
+            <li><i class="fas fa-upload"></i> Share your own recipes</li>
+            <li><i class="fas fa-comments"></i> Engage with the community</li>
+            <li><i class="fas fa-folder-plus"></i> Create collections</li>
+            <li><i class="fas fa-user-check"></i> Follow your favorite chefs</li>
+        </ul>
+        
+        <div class="auth-image">
+            <img src="{% static 'images/cooking.jpg' %}" alt="Cooking" class="img-fluid">
+        </div>
+    </div>
+</div>
+{% endblock %}
