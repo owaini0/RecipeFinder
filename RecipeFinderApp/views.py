@@ -1,20 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.models import User  # Add this import
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Count
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
-
 from .models import (
     Recipe, Category, UserProfile, Comment, 
     Like, Follow, Collection, RecipeImage, RecipeVideo
 )
 from .forms import (
-    UserRegistrationForm, UserLoginForm, UserProfileForm, 
-    RecipeForm, CommentForm, CollectionForm, RecipeImageForm, 
+    UserRegistrationForm, UserLoginForm, UserProfileForm,
+    RecipeForm, CommentForm, CollectionForm, RecipeImageForm,
     RecipeVideoForm, SearchForm
 )
 
@@ -109,17 +108,11 @@ def profile(request, username=None):
             following=user
         ).exists()
     
-    # Get follower and following counts
-    followers_count = Follow.objects.filter(following=user).count()
-    following_count = Follow.objects.filter(follower=user).count()
-    
     context = {
         'profile': profile,
         'recipes': recipes,
         'collections': collections,
-        'is_following': is_following,
-        'followers_count': followers_count,
-        'following_count': following_count
+        'is_following': is_following
     }
     return render(request, 'recipe_finder/profile.html', context)
 
@@ -150,6 +143,7 @@ def recipe_list(request):
         query = form.cleaned_data.get('query')
         category = form.cleaned_data.get('category')
         difficulty = form.cleaned_data.get('difficulty')
+        
         max_cooking_time = form.cleaned_data.get('max_cooking_time')
         
         if query:
@@ -244,9 +238,13 @@ def recipe_create(request):
         recipe_form = RecipeForm()
         image_form = RecipeImageForm()
     
+    # Add categories to the context
+    categories = Category.objects.all()
+    
     context = {
         'recipe_form': recipe_form,
         'image_form': image_form,
+        'categories': categories,
     }
     return render(request, 'recipe_finder/recipe_form.html', context)
 
