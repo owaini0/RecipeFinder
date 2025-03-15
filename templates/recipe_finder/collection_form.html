@@ -1,0 +1,162 @@
+{% extends 'recipe_finder/base.html' %}
+{% load static %}
+
+{% block title %}{% if editing %}Edit{% else %}Create{% endif %} Collection - RecipeFinder{% endblock %}
+
+{% block content %}
+<div class="form-container collection-form-container">
+    <div class="form-header">
+        <div class="header-icon">
+            <i class="fas {% if editing %}fa-edit{% else %}fa-folder-plus{% endif %}"></i>
+        </div>
+        <h1>{% if editing %}Edit{% else %}Create{% endif %} Collection</h1>
+        <p>{% if editing %}Update your collection details{% else %}Organize your favorite recipes in a collection{% endif %}</p>
+    </div>
+    
+    <div class="form-content">
+        <form method="post" class="standard-form">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="form-error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <div class="error-content">
+                        <h4>Please correct the following errors:</h4>
+                        {{ form.errors }}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="form-layout">
+                <div class="form-main">
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label for="{{ form.name.id_for_label }}">
+                                <i class="fas fa-folder"></i> Collection Name*
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="error-message">{{ form.name.errors }}</div>
+                            {% endif %}
+                            <small class="form-text">Choose a name that describes your collection</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.description.id_for_label }}">
+                                <i class="fas fa-align-left"></i> Description
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="error-message">{{ form.description.errors }}</div>
+                            {% endif %}
+                            <small class="form-text">Tell others what this collection is about (optional)</small>
+                        </div>
+                        
+                        <div class="form-group privacy-toggle">
+                            <div class="toggle-label">
+                                <i class="fas fa-globe"></i> Collection Privacy
+                            </div>
+                            <div class="toggle-container">
+                                <label class="switch">
+                                    {{ form.is_public }}
+                                    <span class="slider round"></span>
+                                </label>
+                                <div class="toggle-options">
+                                    <span class="option-public {% if not editing or form.is_public.value %}active{% endif %}">Public</span>
+                                    <span class="option-private {% if editing and not form.is_public.value %}active{% endif %}">Private</span>
+                                </div>
+                            </div>
+                            <small class="form-text">Public collections can be viewed by anyone. Private collections are only visible to you.</small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary pulse-effect">
+                            <i class="fas fa-save"></i> {% if editing %}Save Changes{% else %}Create Collection{% endif %}
+                        </button>
+                <i class="fas fa-trash"></i> Delete this collection
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .collection-form-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+    
+    .form-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .form-header h1 {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 2.5rem;
+        color: var(--text-color);
+        margin-bottom: 10px;
+    }
+    
+    .form-content {
+        background-color: var(--light-color);
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    }
+    
+    .form-section {
+        margin-bottom: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+    
+    .form-check {
+        display: flex;
+        align-items: center;
+        padding-top: 10px;
+    }
+    
+    .form-check input[type="checkbox"] {
+        margin-right: 10px;
+        width: auto;
+    }
+    
+    .danger-zone {
+        margin-top: 40px;
+        background-color: #fff5f5;
+        border: 1px solid #ffcccc;
+        border-radius: 15px;
+        padding: 20px;
+    }
+    
+    .danger-zone h3 {
+        color: #cc0000;
+        margin-bottom: 10px;
+    }
+    
+    .delete-btn {
+        background-color: #cc0000;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    
+    .delete-btn:hover {
+        background-color: #aa0000;
+    }
+</style>
+{% endblock %}

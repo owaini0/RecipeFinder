@@ -229,20 +229,25 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Select2 for categories
-        $('#{{ recipe_form.categories.id_for_label }}').select2({
-            placeholder: "Select categories",
-            width: '100%',
-            theme: "classic"
-        });
+        // Initialize Select2 for categories - check if ID exists first
+        const categoryField = document.getElementById('{{ recipe_form.categories.id_for_label }}');
+        if (categoryField) {
+            $(categoryField).select2({
+                placeholder: "Select categories",
+                width: '100%',
+                theme: "classic"
+            });
+        }
         
-        // Character counters
-        const titleField = document.querySelector('#{{ recipe_form.title.id_for_label }}');
+        // Character counters - directly find the elements rather than using IDs that might be empty
+        const titleField = document.querySelector('input[name="{{ recipe_form.title.html_name }}"]');
         const titleCounter = document.querySelector('#title-chars');
-        const descField = document.querySelector('#{{ recipe_form.description.id_for_label }}');
+        const descField = document.querySelector('textarea[name="{{ recipe_form.description.html_name }}"]');
         const descCounter = document.querySelector('#description-chars');
         
         function updateCharCounter(field, counter) {
+            if (!field || !counter) return;
+            
             const currentLength = field.value.length;
             counter.textContent = currentLength;
             
@@ -255,127 +260,26 @@
             }
         }
         
-        if (titleField) {
+        if (titleField && titleCounter) {
             updateCharCounter(titleField, titleCounter);
             titleField.addEventListener('input', () => updateCharCounter(titleField, titleCounter));
         }
         
-        if (descField) {
+        if (descField && descCounter) {
             updateCharCounter(descField, descCounter);
             descField.addEventListener('input', () => updateCharCounter(descField, descCounter));
         }
         
-        // Multi-step form navigation
-        const steps = document.querySelectorAll('.form-step');
-        const progressSteps = document.querySelectorAll('.progress-step');
-        const nextButtons = document.querySelectorAll('.next-step');
-        const prevButtons = document.querySelectorAll('.prev-step');
-        
-        let currentStep = 0;
-        
-        function showStep(stepIndex) {
-            steps.forEach((step, index) => {
-                if (index === stepIndex) {
-                    step.style.display = 'block';
-                } else {
-                    step.style.display = 'none';
-                }
-            });
-            
-            progressSteps.forEach((step, index) => {
-                if (index <= stepIndex) {
-                    step.classList.add('active');
-                } else {
-                    step.classList.remove('active');
-                }
-            });
-            
-            // Scroll to top of the form
-            const formContainer = document.querySelector('.recipe-form-container');
-            formContainer.scrollIntoView({ behavior: 'smooth' });
-            
-            currentStep = stepIndex;
+        // Initialize multi-step form navigation
+        if (typeof initMultiStepForm === 'function') {
+            initMultiStepForm();
+        } else {
+            console.error("initMultiStepForm function not found");
         }
-        
-        function validateStep(stepIndex) {
-            if (stepIndex === 0) {
-                const title = titleField.value.trim();
-                const description = descField.value.trim();
-                
-                if (!title) {
-                    alert('Please enter a recipe title');
-                    return false;
-                }
-                
-                if (!description) {
-                    alert('Please provide a recipe description');
-                    return false;
-                }
-                
-                return true;
-            }
-            
-            if (stepIndex === 1) {
-                const ingredients = document.querySelectorAll('.ingredient-input');
-                const instructions = document.querySelectorAll('.instruction-input');
-                
-                if (ingredients.length === 0) {
-                    alert('Please add at least one ingredient');
-                    return false;
-                }
-                
-                if (instructions.length === 0) {
-                    alert('Please add at least one instruction step');
-                    return false;
-                }
-                
-                // Check if any ingredient fields are empty
-                for (let i = 0; i < ingredients.length; i++) {
-                    if (!ingredients[i].value.trim()) {
-                        alert('Please fill in all ingredient fields or remove empty ones');
-                        return false;
-                    }
-                }
-                
-                // Check if any instruction fields are empty
-                for (let i = 0; i < instructions.length; i++) {
-                    if (!instructions[i].value.trim()) {
-                        alert('Please fill in all instruction steps or remove empty ones');
-                        return false;
-                    }
-                }
-                
-                return true;
-            }
-            
-            return true;
-        }
-        
-        nextButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                if (validateStep(currentStep)) {
-                    showStep(currentStep + 1);
-                }
-            });
-        });
-        
-        prevButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                showStep(currentStep - 1);
-            });
-        });
-        
-        progressSteps.forEach((step, index) => {
-            step.addEventListener('click', function() {
-                if (index < currentStep || validateStep(currentStep)) {
-                    showStep(index);
-                }
-            });
-        });
         
         // Dynamic ingredient management
         const ingredientsContainer = document.querySelector('.ingredients-list');
-        const ingredientsHiddenField = document.querySelector('#{{ recipe_form.ingredients.id_for_label }}');
+        const ingredientsHiddenField = document.querySelector('input[name="{{ recipe_form.ingredients.html_name }}"]');
         const addIngredientButton = document.querySelector('.add-ingredient-btn');
         
         function updateIngredientsField() {
@@ -427,9 +331,9 @@
             });
         }
         
-        // Dynamic instruction management
+        // Dynamic instruction management 
         const instructionsContainer = document.querySelector('.instructions-list');
-        const instructionsHiddenField = document.querySelector('#{{ recipe_form.instructions.id_for_label }}');
+        const instructionsHiddenField = document.querySelector('input[name="{{ recipe_form.instructions.html_name }}"]');
         const addInstructionButton = document.querySelector('.add-instruction-btn');
         
         function updateInstructionsField() {
@@ -496,7 +400,7 @@
         
         // Enhanced image upload
         const dropzone = document.getElementById('image-dropzone');
-        const imageInput = document.querySelector('#{{ image_form.image.id_for_label }}');
+        const imageInput = document.querySelector('input[name="{{ image_form.image.html_name }}"]');
         const previewImg = document.getElementById('preview-img');
         const previewContainer = document.querySelector('.image-preview');
         const removeImageBtn = document.querySelector('.remove-image-btn');

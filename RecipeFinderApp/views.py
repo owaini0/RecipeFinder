@@ -22,9 +22,9 @@ def home(request):
     # Get featured recipes
     featured_recipes = Recipe.objects.filter(featured=True)[:3]
     
-    # Get most liked recipes
+    # Get most liked recipes - use a different name for annotation to avoid conflict
     popular_recipes = Recipe.objects.annotate(
-        likes_count=Count('likes')).order_by('-likes_count')[:6]
+        total_likes=Count('likes')).order_by('-total_likes')[:6]
     
     # Get newest recipes
     newest_recipes = Recipe.objects.order_by('-created_at')[:6]
@@ -130,7 +130,10 @@ def edit_profile(request):
     else:
         form = UserProfileForm(instance=profile)
     
-    return render(request, 'recipe_finder/edit_profile.html', {'form': form})
+    return render(request, 'recipe_finder/edit_profile.html', {
+        'form': form,
+        'profile': profile
+    })
 
 # Recipe Views
 def recipe_list(request):

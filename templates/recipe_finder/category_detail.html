@@ -1,0 +1,215 @@
+{% extends 'recipe_finder/base.html' %}
+{% load static %}
+
+{% block title %}{{ category.name }} Recipes - RecipeFinder{% endblock %}
+
+{% block content %}
+<div class="category-detail-container">
+    <div class="category-header">
+        <h1>{{ category.name }}</h1>
+        {% if category.description %}
+            <p class="category-description">{{ category.description }}</p>
+        {% endif %}
+    </div>
+    
+    <div class="category-recipes">
+        <div class="recipes-count">
+            <p>
+                {% with count=page_obj.paginator.count %}
+                    {{ count }} recipe{{ count|pluralize }} found
+                {% endwith %}
+            </p>
+        </div>
+        
+        {% if page_obj %}
+            <div class="recipes-grid">
+                {% for recipe in page_obj %}
+                    <div class="recipe-card">
+                        <div class="recipe-image">
+                            {% if recipe.images.exists %}
+                                <img src="{{ recipe.images.first.image.url }}" alt="{{ recipe.title }}">
+                            {% else %}
+                                <img src="{% static 'images/recipe-placeholder.jpg' %}" alt="{{ recipe.title }}">
+                            {% endif %}
+                            <div class="recipe-badge">
+                                <span class="difficulty-badge {{ recipe.difficulty }}">{{ recipe.get_difficulty_display }}</span>
+                                {% if recipe.author.profile.chef_verified %}
+                                    <span class="chef-badge"><i class="fas fa-check-circle"></i> Chef</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="recipe-info">
+                            <h3><a href="{% url 'recipe_detail' recipe.slug %}">{{ recipe.title }}</a></h3>
+                            <div class="recipe-meta">
+                                <span><i class="far fa-clock"></i> {{ recipe.total_time }} min</span>
+                                <span><i class="far fa-heart"></i> {{ recipe.likes_count }}</span>
+                                <span><i class="far fa-comment"></i> {{ recipe.comments_count }}</span>
+                            </div>
+                            <p class="recipe-excerpt">{{ recipe.description|truncatechars:100 }}</p>
+                            <div class="recipe-author">
+                                <a href="{% url 'profile_with_username' recipe.author.username %}">
+                                    {% if recipe.author.profile.profile_pic %}
+                                        <img src="{{ recipe.author.profile.profile_pic.url }}" alt="{{ recipe.author.username }}">
+                                    {% else %}
+                                        <i class="fas fa-user-circle"></i>
+                                    {% endif %}
+                                    <span>{{ recipe.author.username }}</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div class="pagination">
+                <span class="step-links">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1">&laquo; first</a>
+                        <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                    {% endif %}
+            
+                    <span class="current">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                    </span>
+            
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}">next</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+        {% else %}
+            <div class="no-recipes">
+                <i class="fas fa-search"></i>
+                <h3>No recipes found in this category</h3>
+                <p>Be the first to add a recipe to this category!</p>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'recipe_create' %}" class="btn btn-primary">Create Recipe</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary">Log in to create recipes</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="back-to-categories">
+        <a href="{% url 'recipe_list' %}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Browse All Recipes
+        </a>
+    </div>
+</div>
+
+<style>
+    .category-detail-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    
+    .category-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .category-header h1 {
+        font-size: 3rem;
+        font-family: 'Montserrat', sans-serif;
+        margin-bottom: 15px;
+        color: var(--text-color);
+        position: relative;
+        display: inline-block;
+    }
+    
+    .category-header h1::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 4px;
+        background-color: var(--primary-color);
+        border-radius: 2px;
+    }
+    
+    .category-description {
+        max-width: 700px;
+        margin: 20px auto;
+        color: #666;
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    
+    .recipes-count {
+        margin-bottom: 20px;
+        font-size: 1.1rem;
+        color: #555;
+    }
+    
+    .recipes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+    
+    .no-recipes {
+        text-align: center;
+        padding: 60px 0;
+        background-color: var(--light-color);
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+        margin: 40px 0;
+    }
+    
+    .no-recipes i {
+        font-size: 4rem;
+        color: #ddd;
+        margin-bottom: 20px;
+    }
+    
+    .no-recipes h3 {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+        color: #555;
+    }
+    
+    .no-recipes p {
+        color: #777;
+        margin-bottom: 25px;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 30px;
+        margin-bottom: 40px;
+    }
+    
+    .pagination a {
+        color: var(--primary-color);
+        text-decoration: none;
+        padding: 8px 16px;
+        margin: 0 5px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        border: 1px solid #eee;
+    }
+    
+    .pagination a:hover {
+        background-color: #f9f9f9;
+        border-color: var(--primary-color);
+    }
+    
+    .pagination .current {
+        padding: 8px 16px;
+        margin: 0 10px;
+    }
+    
+    .back-to-categories {
+        text-align: center;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}

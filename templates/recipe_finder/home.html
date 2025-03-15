@@ -94,7 +94,7 @@
                         <h3><a href="{% url 'recipe_detail' recipe.slug %}">{{ recipe.title }}</a></h3>
                         <div class="recipe-meta">
                             <span><i class="far fa-clock"></i> {{ recipe.total_time }} min</span>
-                            <span><i class="far fa-heart"></i> {{ recipe.likes_count }}</span>
+                            <span><i class="far fa-heart"></i> {% if recipe.total_likes %}{{ recipe.total_likes }}{% else %}{{ recipe.likes_count }}{% endif %}</span>
                             <span><i class="far fa-comment"></i> {{ recipe.comments_count }}</span>
                         </div>
                         <p class="recipe-excerpt">{{ recipe.description|truncatechars:100 }}</p>

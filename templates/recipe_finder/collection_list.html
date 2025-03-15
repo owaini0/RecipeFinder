@@ -1,0 +1,258 @@
+{% extends 'recipe_finder/base.html' %}
+{% load static %}
+
+{% block title %}My Collections - RecipeFinder{% endblock %}
+
+{% block content %}
+<div class="collection-list-container">
+    <div class="collection-list-header">
+        <div class="header-content">
+            <h1>My Recipe Collections</h1>
+            <p>Organize your favorite recipes into collections</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'collection_create' %}" class="btn btn-primary create-collection-btn">
+                <i class="fas fa-plus"></i> Create Collection
+            </a>
+        </div>
+    </div>
+    
+    {% if collections %}
+        <div class="collections-grid">
+            {% for collection in collections %}
+                <div class="collection-card">
+                    <div class="collection-cover">
+                        {% if collection.recipes.exists and collection.recipes.first.images.exists %}
+                            <img src="{{ collection.recipes.first.images.first.image.url }}" alt="{{ collection.name }}">
+                        {% else %}
+                            <img src="{% static 'images/collection-placeholder.jpg' %}" alt="{{ collection.name }}">
+                        {% endif %}
+                        <div class="collection-count">
+                            <span>{{ collection.recipes.count }} {% if collection.recipes.count == 1 %}recipe{% else %}recipes{% endif %}</span>
+                        </div>
+                        {% if not collection.is_public %}
+                            <div class="private-badge">
+                                <i class="fas fa-lock"></i> Private
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="collection-info">
+                        <h3><a href="{% url 'collection_detail' collection.pk %}">{{ collection.name }}</a></h3>
+                        <p>{% if collection.description %}{{ collection.description|truncatechars:100 }}{% else %}<span class="no-description">No description</span>{% endif %}</p>
+                        <div class="collection-meta">
+                            <span class="created-date">
+                                <i class="far fa-calendar-alt"></i> Created {{ collection.created_at|date:"M d, Y" }}
+                            </span>
+                        </div>
+                        <div class="collection-actions">
+                            <a href="{% url 'collection_detail' collection.pk %}" class="view-btn">
+                                <i class="far fa-eye"></i> View
+                            </a>
+                            <a href="{% url 'collection_edit' collection.pk %}" class="edit-btn">
+                                <i class="far fa-edit"></i> Edit
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-collections">
+            <i class="fas fa-folder-open"></i>
+            <h3>You don't have any collections yet</h3>
+            <p>Create your first collection to organize your favorite recipes!</p>
+            <a href="{% url 'collection_create' %}" class="btn btn-primary">Create Your First Collection</a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .collection-list-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    
+    .collection-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+    
+    .header-content h1 {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 2.5rem;
+        color: var(--text-color);
+        margin-bottom: 10px;
+    }
+    
+    .header-content p {
+        color: #666;
+        font-size: 1.1rem;
+    }
+    
+    .create-collection-btn {
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .collections-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 30px;
+    }
+    
+    .collection-card {
+        background-color: var(--light-color);
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .collection-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .collection-cover {
+        position: relative;
+        height: 180px;
+    }
+    
+    .collection-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .collection-count {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+    }
+    
+    .private-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .collection-info {
+        padding: 20px;
+    }
+    
+    .collection-info h3 {
+        margin-bottom: 10px;
+        font-family: 'Montserrat', sans-serif;
+    }
+    
+    .collection-info h3 a {
+        color: var(--text-color);
+        text-decoration: none;
+    }
+    
+    .collection-info p {
+        color: #666;
+        margin-bottom: 15px;
+        line-height: 1.5;
+    }
+    
+    .no-description {
+        font-style: italic;
+        color: #999;
+    }
+    
+    .collection-meta {
+        margin-bottom: 15px;
+        color: #888;
+        font-size: 14px;
+    }
+    
+    .collection-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .view-btn, .edit-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .view-btn {
+        background-color: var(--secondary-color);
+        color: white;
+    }
+    
+    .edit-btn {
+        background-color: transparent;
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    .view-btn:hover, .edit-btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .no-collections {
+        text-align: center;
+        padding: 80px 20px;
+        background-color: var(--light-color);
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    }
+    
+    .no-collections i {
+        font-size: 5rem;
+        color: #ddd;
+        margin-bottom: 20px;
+    }
+    
+    .no-collections h3 {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+        color: #555;
+    }
+    
+    .no-collections p {
+        color: #777;
+        font-size: 1.1rem;
+        margin-bottom: 25px;
+    }
+    
+    @media (max-width: 768px) {
+        .collection-list-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .collections-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+    }
+</style>
+{% endblock %}
