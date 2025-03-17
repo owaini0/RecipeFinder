@@ -69,16 +69,27 @@
                             <small class="form-text">Public collections can be viewed by anyone. Private collections are only visible to you.</small>
                         </div>
                     </div>
-
+                    
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary pulse-effect">
-                            <i class="fas fa-save"></i> {% if editing %}Save Changes{% else %}Create Collection{% endif %}
+                            <i class="fas fa-save"></i>
+                            {% if editing %}
+                                Save Changes
+                            {% else %}
+                                Create Collection
+                            {% endif %}
                         </button>
-                <i class="fas fa-trash"></i> Delete this collection
-            </button>
+                        
+                        {% if editing %}
+                            <button type="button" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Delete this collection
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </form>
     </div>
-    {% endif %}
 </div>
 
 <style>
