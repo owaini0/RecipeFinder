@@ -1,0 +1,210 @@
+{% extends 'recipe_finder/base.html' %}
+{% load static %}
+
+{% block title %}{{ recipe.title }} - RecipeFinder{% endblock %}
+
+{% block content %}
+<div class="recipe-detail-container">
+  
+  <div class="recipe-header">
+    <h1>{{ recipe.title }}</h1>
+    <div class="recipe-meta">
+      <span class="time-meta"><i class="far fa-clock"></i> {{ recipe.total_time }} min</span>
+      <span class="like-meta"><i class="far fa-heart"></i> {{ recipe.likes_count }}</span>
+      <span class="comment-meta"><i class="far fa-comment"></i> {{ recipe.comments.count }}</span>
+      {% if recipe.author.profile.chef_verified %}
+      <span class="chef-badge"><i class="fas fa-check-circle"></i> Chef</span>
+      {% endif %}
+    </div>
+    <p class="recipe-author">
+      By <a href="{% url 'profile_with_username' recipe.author.username %}">{{ recipe.author.username }}</a>
+    </p>
+  </div>
+
+  {% if recipe.images.exists %}
+  <div class="recipe-image-gallery">
+    {% for img in recipe.images.all %}
+    <div class="gallery-item">
+      <img src="{{ img.image.url }}" alt="{{ recipe.title }}" />
+      {% if img.caption %}
+      <p class="image-caption">{{ img.caption }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-images">
+    <img src="{% static 'images/recipe-placeholder.jpg' %}" alt="{{ recipe.title }}" class="recipe-placeholder" />
+  </div>
+  {% endif %}
+
+  
+  <div class="recipe-description">
+    <h2>Description</h2>
+    <p>{{ recipe.description }}</p>
+  </div>
+
+ 
+  <div class="recipe-details">
+    <div class="detail-item"><strong>Difficulty:</strong> {{ recipe.get_difficulty_display }}</div>
+    <div class="detail-item"><strong>Prep Time:</strong> {{ recipe.prep_time }} min</div>
+    <div class="detail-item"><strong>Cooking Time:</strong> {{ recipe.cooking_time }} min</div>
+    <div class="detail-item"><strong>Servings:</strong> {{ recipe.servings }}</div>
+  </div>
+
+  
+  {% if recipe.ingredients %}
+  <div class="recipe-section">
+    <h2>Ingredients</h2>
+    <ul class="ingredients-list">
+      {% for ingredient in recipe.ingredients.splitlines %}
+      <li>{{ ingredient }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+
+  {% if recipe.instructions %}
+  <div class="recipe-section">
+    <h2>Instructions</h2>
+    <ol class="instructions-list">
+      {% for instruction in recipe.instructions.splitlines %}
+      <li>{{ instruction }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+  {% endif %}
+
+
+  {% if user.is_authenticated %}
+  <div class="like-container">
+    <button class="like-btn" data-recipe-id="{{ recipe.id }}" data-liked="{{ user_liked|yesno:'true,false' }}">
+      {% if user_liked %}
+      <i class="fas fa-heart"></i> Liked
+      {% else %}
+      <i class="far fa-heart"></i> Like
+      {% endif %}
+    </button>
+  </div>
+  {% endif %}
+
+  
+  <div class="comments-section">
+    <h2>Comments ({{ recipe.comments.count }})</h2>
+
+    {% if comments %}
+    <div class="comment-list">
+      {% for comment in comments %}
+      <div class="comment-item">
+        <div class="comment-author">
+          <a href="{% url 'profile_with_username' comment.user.username %}">{{ comment.user.username }}</a>
+          <span class="comment-date"> - {{ comment.created_at|date:"F j, Y, g:i a" }}</span>
+        </div>
+        <p class="comment-body">{{ comment.content }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p>No comments yet. Be the first to share your thoughts!</p>
+    {% endif %}
+
+    
+    {% if user.is_authenticated %}
+    <h3>Leave a Comment</h3>
+    <form method="post" action="{% url 'recipe_detail' recipe.slug %}" class="comment-form">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_content">Your Comment:</label>
+        <textarea name="content" id="id_content" rows="4" class="form-control"></textarea>
+        {% if comment_form.content.errors %}
+        <div class="error-message">{{ comment_form.content.errors }}</div>
+        {% endif %}
+      </div>
+      <button type="submit" class="btn btn-primary">Post Comment</button>
+    </form>
+    {% else %}
+    <p><a href="{% url 'login' %}">Log in</a> to post a comment.</p>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+
+.recipe-detail-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+
+.recipe-placeholder,
+.recipe-image-gallery img {
+    width: 100%;
+    max-width: 400px; 
+    max-height: 300px;
+    object-fit: cover;
+    display: block;
+    margin: auto;
+    border-radius: 10px;
+}
+
+
+.recipe-image-gallery {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.gallery-item img {
+    width: 100%;
+    max-width: 600px;
+    max-height: 600px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.like-container {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.like-btn {
+    background-color: #ffebeb;
+    border: 1px solid #f48c8c;
+    color: #f44;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-weight: 600;
+}
+
+.like-btn:hover {
+    background-color: #fddddd;
+}
+
+
+.comments-section {
+    margin-top: 40px;
+}
+
+.comment-item {
+    background-color: #f8f8f8;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.comment-author {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.comment-body {
+    margin-top: 5px;
+}
+</style>
+{% endblock %}

@@ -191,7 +191,8 @@ def recipe_detail(request, slug):
             recipe=recipe
         ).exists()
     
-    # Comment form
+    # Comment form 
+    comment_form = CommentForm()
     if request.method == 'POST' and request.user.is_authenticated:
         comment_form = CommentForm(request.POST)
         if comment_form.is_valid():
@@ -201,15 +202,18 @@ def recipe_detail(request, slug):
             new_comment.save()
             messages.success(request, 'Comment added successfully!')
             return redirect('recipe_detail', slug=slug)
-    else:
-        comment_form = CommentForm()
+        else:
+          
+            messages.error(request, 'Error submitting comment. Please check the form.')
+            
     
     context = {
         'recipe': recipe,
         'comments': comments,
         'similar_recipes': similar_recipes,
         'user_liked': user_liked,
-        'comment_form': comment_form
+        'comment_form': comment_form,
+        'comments_count': comments.count(),
     }
     
     return render(request, 'recipe_finder/recipe_detail.html', context)
@@ -485,3 +489,5 @@ def category_detail(request, slug):
         'page_obj': page_obj
     }
     return render(request, 'recipe_finder/category_detail.html', context)
+
+
