@@ -3,40 +3,12 @@
 
 {% block title %}Login - RecipeFinder{% endblock %}
 
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/login.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="auth-container">
-    <div class="auth-form-container">
-        <div class="auth-header">
-            <h2>Welcome Back</h2>
-            <p>Log in to your RecipeFinder account</p>
-        </div>
-        
-        <form method="post" class="auth-form">
-            {% csrf_token %}
-            
-            {% for field in form %}
-                <div class="form-group">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% for error in field.errors %}
-                        <div class="error-message">{{ error }}</div>
-                    {% endfor %}
-                </div>
-            {% endfor %}
-            
-            <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input" id="remember-me" name="remember_me">
-                <label class="form-check-label" for="remember-me">Remember me</label>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">Log In</button>
-        </form>
-        
-        <div class="auth-footer">
-            <p>Don't have an account? <a href="{% url 'register' %}">Sign Up</a></p>
-        </div>
-    </div>
-    
     <div class="auth-info">
         <h3>Welcome to RecipeFinder</h3>
         <p>Log in to access your saved recipes, collections, and more!</p>
@@ -55,10 +27,88 @@
                 <span>Connect with chefs</span>
             </div>
         </div>
+    </div>
+    
+    <div class="auth-form-container">
+        <div class="auth-header">
+            <h2>Welcome Back</h2>
+            <p>Log in to your RecipeFinder account</p>
+        </div>
         
-        <div class="auth-image">
-            <img src="{% static 'images/login-hero.jpg' %}" alt="Cooking" class="img-fluid">
+        <!-- Using novalidate to ensure the form always submits and server validates -->
+        <form method="post" class="auth-form" action="{% url 'login' %}" data-no-ajax="true" autocomplete="off" novalidate>
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            
+            <div class="form-group">
+                <label class="remember-me" for="remember-me">
+                    <input type="checkbox" id="remember-me" name="remember_me">
+                    <span></span>
+                    Remember me
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Log In</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="{% url 'register' %}">Sign Up</a></p>
         </div>
     </div>
 </div>
+
+<script>
+// Ensure traditional form submission - Version 2 with direct submission
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Login page protection loaded - v2");
+    const loginForm = document.querySelector('.auth-form');
+    
+    if (loginForm) {
+        // Protect the form from AJAX interference
+        console.log("Protecting login form from AJAX interference");
+        
+        // Option 1: Completely disable fetch and XMLHttpRequest during the entire page load
+        const originalFetch = window.fetch;
+        const originalXHR = window.XMLHttpRequest;
+        
+        // Replace with dummy implementations that log and do nothing
+        window.fetch = function() {
+            console.error('Fetch blocked on login page');
+            return Promise.reject('Login page - fetch blocked');
+        };
+        
+        window.XMLHttpRequest = function() {
+            console.error('XHR blocked on login page');
+            return {
+                open: function() {},
+                send: function() {},
+                setRequestHeader: function() {}
+            };
+        };
+        
+        // Option 2: Add a direct submit handler that doesn't depend on JS
+        loginForm.addEventListener('submit', function(e) {
+            console.log("Form submission detected - ensuring direct submission");
+            
+            // Let the form submit normally, nothing to do here
+            // The form will use the native browser submission mechanism
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% block page_js %}
+<!-- Add timestamp to prevent caching -->
+<script src="{% static 'js/pages/login.js' %}?v={{ timestamp }}"></script>
 {% endblock %}

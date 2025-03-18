@@ -2,8 +2,74 @@
 {% load static %}
 {% block title %}{% if editing %}Edit{% else %}Create{% endif %} Recipe - RecipeFinder{% endblock %}
 
-{% block extra_css %}
+{% block page_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<link rel="stylesheet" href="{% static 'css/pages/recipe_form.css' %}">
+{% endblock %}
+
+{% block page_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Ensure toast.js is loaded before our form script -->
+<script src="{% static 'js/shared/toast.js' %}"></script>
+<script>
+    // Initialize Select2 before any other scripts run
+    $(document).ready(function() {
+        // Make sure the categories field is not marked as required for HTML5 validation
+        // (we'll validate it with JavaScript instead)
+        $('#id_categories').prop('required', false);
+        
+        // Initialize Select2 for categories
+        try {
+            $('#id_categories').select2({
+                placeholder: "Select categories",
+                width: '100%',
+                theme: "classic",
+                ajax: {
+                    url: "{% url 'category_list_json' %}",
+                    dataType: 'json',
+                    delay: 250,
+                    cache: true,
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data.categories, function(category) {
+                                return {
+                                    id: category.id,
+                                    text: category.name
+                                };
+                            })
+                        };
+                    }
+                },
+                // Don't require typing before showing options
+                minimumInputLength: 0
+            });
+            
+            // Manually trigger a change to ensure it's fully initialized
+            $('#id_categories').trigger('change');
+            
+            // Add an attribute to track initialization
+            $('#id_categories').attr('data-select2-initialized', 'true');
+            console.log('Select2 successfully initialized');
+            
+            // Pre-select categories for editing
+            {% if editing and recipe.categories.all %}
+            var preselectedCategories = [
+                {% for category in recipe.categories.all %}
+                { id: {{ category.id }}, text: "{{ category.name }}" },
+                {% endfor %}
+            ];
+            
+            preselectedCategories.forEach(function(category) {
+                var option = new Option(category.text, category.id, true, true);
+                $('#id_categories').append(option).trigger('change');
+            });
+            {% endif %}
+        } catch (e) {
+            console.error('Error initializing Select2:', e);
+        }
+    });
+</script>
+<script src="{% static 'js/pages/recipe_form.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -24,7 +90,7 @@
         </div>
         <div class="progress-step" data-step="images-media">
             <span class="step-number">3</span>
-            <span class="step-label">Images</span>
+            <span class="step-label">Images & Media</span>
         </div>
     </div>
     
@@ -91,7 +157,7 @@
                 <div class="form-group">
                     <label for="{{ recipe_form.categories.id_for_label }}">Categories*</label>
                     {{ recipe_form.categories }}
-                    <small class="form-text text-muted">Select all categories that apply to your recipe.</small>
+                    <small class="form-text text-muted">Select categories from the dropdown. You can select multiple categories.</small>
                     {% for error in recipe_form.categories.errors %}
                         <div class="error-message">{{ error }}</div>
                     {% endfor %}
@@ -111,10 +177,7 @@
                     <label>Ingredients*</label>
                     <div class="ingredients-container">
                         <div class="ingredients-list">
-                            <div class="ingredient-item">
-                                <input type="text" class="ingredient-input" placeholder="e.g. 2 cups flour">
-                                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-                            </div>
+                            <!-- Dynamic ingredient items will be added here -->
                         </div>
                         <button type="button" class="add-ingredient-btn"><i class="fas fa-plus"></i> Add Ingredient</button>
                     </div>
@@ -128,11 +191,7 @@
                     <label>Instructions*</label>
                     <div class="instructions-container">
                         <div class="instructions-list">
-                            <div class="instruction-item">
-                                <span class="step-number">1</span>
-                                <textarea class="instruction-input" placeholder="Describe this step..."></textarea>
-                                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-                            </div>
+                            <!-- Dynamic instruction items will be added here -->
                         </div>
                         <button type="button" class="add-instruction-btn"><i class="fas fa-plus"></i> Add Step</button>
                     </div>
@@ -140,6 +199,12 @@
                     {% for error in recipe_form.instructions.errors %}
                         <div class="error-message">{{ error }}</div>
                     {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ recipe_form.notes.id_for_label }}">Notes (Optional)</label>
+                    {{ recipe_form.notes }}
+                    <small class="form-text text-muted">Add any additional notes, tips, or variations for this recipe.</small>
                 </div>
             </div>
             
@@ -176,37 +241,41 @@
                     <div class="image-preview-area">
                         <div class="image-dropzone" id="image-dropzone">
                             <i class="fas fa-cloud-upload-alt"></i>
-                            <p>Drag & drop image here or click to browse</p>
+                            <p>Drag & drop images or videos here or click to browse</p>
+                            <small class="supported-formats">Supported formats: JPG, JPEG, PNG, GIF, WebP, BMP (images), MP4, WebM, OGG (videos) (max 200MB each)</small>
+                            <small class="upload-hint">You can select multiple files at once</small>
                         </div>
-                        <div class="image-preview" style="display: none;">
-                            <img id="preview-img" src="#" alt="Preview">
-                            <button type="button" class="remove-image-btn"><i class="fas fa-times"></i></button>
+                        <div class="image-previews" id="image-previews">
+                            <!-- Multiple image/video previews will be inserted here by JavaScript -->
                         </div>
                     </div>
                     
                     <div class="image-details">
                         <div class="form-group">
-                            <label for="{{ image_form.image.id_for_label }}">Image File*</label>
+                            <label for="{{ image_form.image.id_for_label }}">Media Files (Optional)</label>
                             {{ image_form.image }}
-                            <small class="form-text text-muted">Upload a high-quality image of your finished recipe. Recommended size: 1200×800px.</small>
+                            <script>
+                                // Add multiple attribute to the file input
+                                document.getElementById('{{ image_form.image.id_for_label }}').setAttribute('multiple', 'multiple');
+                                // Update accept attribute to include video formats
+                                document.getElementById('{{ image_form.image.id_for_label }}').setAttribute('accept', 'image/jpeg,image/png,image/gif,image/webp,image/bmp,video/mp4,video/webm,video/ogg');
+                            </script>
+                            <small class="form-text text-muted">Optional: Upload high-quality images or videos of your finished recipe. You can create a recipe without images and add them later. Images recommended size: 1200×800px. Videos recommended: HD quality, max 2 minutes. Maximum size: 200MB per file.</small>
                             {% for error in image_form.image.errors %}
                                 <div class="error-message">{{ error }}</div>
                             {% endfor %}
+                            {% if video_form %}
+                                {{ video_form.video.as_hidden }}
+                            {% endif %}
                         </div>
                         
                         <div class="form-group">
-                            <label for="{{ image_form.caption.id_for_label }}">Image Caption</label>
+                            <label for="{{ image_form.caption.id_for_label }}">Media Caption</label>
                             {{ image_form.caption }}
-                            <small class="form-text text-muted">Add a short caption for your image (optional).</small>
+                            <small class="form-text text-muted">Add a short caption for your images or videos (optional).</small>
                         </div>
                         
-                        <div class="form-group form-check">
-                            {{ image_form.is_primary }}
-                            <label class="form-check-label" for="{{ image_form.is_primary.id_for_label }}">
-                                Set as primary image
-                            </label>
-                            <small class="form-text text-muted">This will be the main image shown on recipe cards and listings.</small>
-                        </div>
+                      
                     </div>
                 </div>
             </div>
@@ -223,305 +292,4 @@
         </div>
     </form>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Select2 for categories - check if ID exists first
-        const categoryField = document.getElementById('{{ recipe_form.categories.id_for_label }}');
-        if (categoryField) {
-            $(categoryField).select2({
-                placeholder: "Select categories",
-                width: '100%',
-                theme: "classic"
-            });
-        }
-        
-        // Character counters - directly find the elements rather than using IDs that might be empty
-        const titleField = document.querySelector('input[name="{{ recipe_form.title.html_name }}"]');
-        const titleCounter = document.querySelector('#title-chars');
-        const descField = document.querySelector('textarea[name="{{ recipe_form.description.html_name }}"]');
-        const descCounter = document.querySelector('#description-chars');
-        
-        function updateCharCounter(field, counter) {
-            if (!field || !counter) return;
-            
-            const currentLength = field.value.length;
-            counter.textContent = currentLength;
-            
-            if (field === titleField && currentLength > 100) {
-                counter.classList.add('text-danger');
-            } else if (field === descField && currentLength > 500) {
-                counter.classList.add('text-danger');
-            } else {
-                counter.classList.remove('text-danger');
-            }
-        }
-        
-        if (titleField && titleCounter) {
-            updateCharCounter(titleField, titleCounter);
-            titleField.addEventListener('input', () => updateCharCounter(titleField, titleCounter));
-        }
-        
-        if (descField && descCounter) {
-            updateCharCounter(descField, descCounter);
-            descField.addEventListener('input', () => updateCharCounter(descField, descCounter));
-        }
-        
-        // Initialize multi-step form navigation
-        if (typeof initMultiStepForm === 'function') {
-            initMultiStepForm();
-        } else {
-            console.error("initMultiStepForm function not found");
-        }
-        
-        // Dynamic ingredient management
-        const ingredientsContainer = document.querySelector('.ingredients-list');
-        const ingredientsHiddenField = document.querySelector('input[name="{{ recipe_form.ingredients.html_name }}"]');
-        const addIngredientButton = document.querySelector('.add-ingredient-btn');
-        
-        function updateIngredientsField() {
-            const ingredientInputs = document.querySelectorAll('.ingredient-input');
-            const ingredients = Array.from(ingredientInputs).map(input => input.value.trim()).filter(value => value !== '');
-            ingredientsHiddenField.value = ingredients.join('\n');
-        }
-        
-        function addIngredient(value = '') {
-            const ingredientItem = document.createElement('div');
-            ingredientItem.className = 'ingredient-item';
-            ingredientItem.innerHTML = `
-                <input type="text" class="ingredient-input" placeholder="e.g. 2 cups flour" value="${value}">
-                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-            `;
-            
-            const removeBtn = ingredientItem.querySelector('.remove-item-btn');
-            removeBtn.addEventListener('click', function() {
-                ingredientItem.remove();
-                updateIngredientsField();
-            });
-            
-            const input = ingredientItem.querySelector('.ingredient-input');
-            input.addEventListener('input', updateIngredientsField);
-            
-            ingredientsContainer.appendChild(ingredientItem);
-            
-            if (value === '') {
-                input.focus();
-            }
-            
-            updateIngredientsField();
-        }
-        
-        addIngredientButton.addEventListener('click', function() {
-            addIngredient();
-        });
-        
-        // Initialize ingredients from hidden field
-        if (ingredientsHiddenField.value) {
-            // Clear the default ingredient item
-            ingredientsContainer.innerHTML = '';
-            
-            const ingredients = ingredientsHiddenField.value.split('\n');
-            ingredients.forEach(ingredient => {
-                if (ingredient.trim()) {
-                    addIngredient(ingredient);
-                }
-            });
-        }
-        
-        // Dynamic instruction management 
-        const instructionsContainer = document.querySelector('.instructions-list');
-        const instructionsHiddenField = document.querySelector('input[name="{{ recipe_form.instructions.html_name }}"]');
-        const addInstructionButton = document.querySelector('.add-instruction-btn');
-        
-        function updateInstructionsField() {
-            const instructionInputs = document.querySelectorAll('.instruction-input');
-            const instructions = Array.from(instructionInputs).map(input => input.value.trim()).filter(value => value !== '');
-            instructionsHiddenField.value = instructions.join('\n');
-        }
-        
-        function updateStepNumbers() {
-            const steps = document.querySelectorAll('.instruction-item .step-number');
-            steps.forEach((step, index) => {
-                step.textContent = index + 1;
-            });
-        }
-        
-        function addInstruction(value = '') {
-            const instructionItem = document.createElement('div');
-            instructionItem.className = 'instruction-item';
-            
-            // Calculate the step number
-            const currentSteps = document.querySelectorAll('.instruction-item').length;
-            
-            instructionItem.innerHTML = `
-                <span class="step-number">${currentSteps + 1}</span>
-                <textarea class="instruction-input" placeholder="Describe this step...">${value}</textarea>
-                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-            `;
-            
-            const removeBtn = instructionItem.querySelector('.remove-item-btn');
-            removeBtn.addEventListener('click', function() {
-                instructionItem.remove();
-                updateStepNumbers();
-                updateInstructionsField();
-            });
-            
-            const textarea = instructionItem.querySelector('.instruction-input');
-            textarea.addEventListener('input', updateInstructionsField);
-            
-            instructionsContainer.appendChild(instructionItem);
-            
-            if (value === '') {
-                textarea.focus();
-            }
-            
-            updateInstructionsField();
-        }
-        
-        addInstructionButton.addEventListener('click', function() {
-            addInstruction();
-        });
-        
-        // Initialize instructions from hidden field
-        if (instructionsHiddenField.value) {
-            // Clear the default instruction item
-            instructionsContainer.innerHTML = '';
-            
-            const instructions = instructionsHiddenField.value.split('\n');
-            instructions.forEach(instruction => {
-                if (instruction.trim()) {
-                    addInstruction(instruction);
-                }
-            });
-        }
-        
-        // Enhanced image upload
-        const dropzone = document.getElementById('image-dropzone');
-        const imageInput = document.querySelector('input[name="{{ image_form.image.html_name }}"]');
-        const previewImg = document.getElementById('preview-img');
-        const previewContainer = document.querySelector('.image-preview');
-        const removeImageBtn = document.querySelector('.remove-image-btn');
-        
-        // Handle drag and drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropzone.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, unhighlight, false);
-        });
-        
-        function highlight() {
-            dropzone.classList.add('highlight');
-        }
-        
-        function unhighlight() {
-            dropzone.classList.remove('highlight');
-        }
-        
-        dropzone.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const file = dt.files[0];
-            
-            if (file) {
-                imageInput.files = dt.files;
-                handleImagePreview(file);
-            }
-        }
-        
-        // Click to browse
-        dropzone.addEventListener('click', function() {
-            imageInput.click();
-        });
-        
-        // Handle file input change
-        imageInput.addEventListener('change', function() {
-            if (this.files[0]) {
-                handleImagePreview(this.files[0]);
-            }
-        });
-        
-        function handleImagePreview(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Please select an image file');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImg.src = e.target.result;
-                dropzone.style.display = 'none';
-                previewContainer.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // Remove image
-        removeImageBtn.addEventListener('click', function() {
-            imageInput.value = '';
-            previewContainer.style.display = 'none';
-            dropzone.style.display = 'flex';
-        });
-        
-        // Form submission
-        const form = document.getElementById('recipe-form');
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Final validation
-            // Step 1
-            const title = titleField.value.trim();
-            const description = descField.value.trim();
-            
-            if (!title) {
-                alert('Please enter a recipe title');
-                showStep(0);
-                return;
-            }
-            
-            if (!description) {
-                alert('Please provide a recipe description');
-                showStep(0);
-                return;
-            }
-            
-            // Step 2
-            const ingredients = document.querySelectorAll('.ingredient-input');
-            const instructions = document.querySelectorAll('.instruction-input');
-            
-            if (ingredients.length === 0) {
-                alert('Please add at least one ingredient');
-                showStep(1);
-                return;
-            }
-            
-            if (instructions.length === 0) {
-                alert('Please add at least one instruction step');
-                showStep(1);
-                return;
-            }
-            
-            // Update hidden fields one last time
-            updateIngredientsField();
-            updateInstructionsField();
-            
-            // Submit the form
-            this.submit();
-        });
-    });
-</script>
 {% endblock %}

@@ -1,0 +1,312 @@
+/* Login Page Specific Styles */
+.auth-container {
+    display: flex;
+    gap: 40px;
+    padding: 40px 20px;
+    min-height: 85vh;
+    align-items: center;
+}
+
+.auth-form-container {
+    flex: 1;
+    max-width: 500px;
+    background: var(--light-color);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(202, 161, 136, 0.1);
+    animation: fadeIn 0.6s ease-out;
+    order: -1; /* Make login form appear first on desktop */
+}
+
+.auth-form-container:hover {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    transform: translateY(-5px);
+}
+
+.auth-info {
+    flex: 1;
+    background-color: rgba(255, 255, 255, 0.7);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    animation: fadeIn 0.8s ease-out;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+.auth-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-header h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.auth-form .form-group {
+    margin-bottom: 25px;
+}
+
+.auth-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background-color: #fafafa;
+}
+
+.auth-form input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(202, 161, 136, 0.2);
+    outline: none;
+    background-color: #fff;
+}
+
+.auth-features {
+    margin-top: 30px;
+}
+
+.auth-features .feature {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 15px;
+}
+
+.auth-features .feature i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    width: 50px;
+    height: 50px;
+    background: rgba(202, 161, 136, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.auth-features .feature span {
+    font-weight: 500;
+    font-size: 1.1rem;
+    color: #444;
+}
+
+.auth-info h3 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    color: #333;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.auth-info p {
+    color: #555;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.auth-form .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 1rem;
+}
+
+.auth-footer a {
+    color: var(--primary-color);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Custom remember me checkbox styling */
+.auth-form .remember-me {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    position: relative;
+    padding-left: 35px;
+    font-weight: 500;
+    color: #555;
+}
+
+.auth-form .remember-me input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: auto;
+}
+
+.auth-form .remember-me input[type="checkbox"] + span {
+    position: absolute;
+    left: 0;
+    top: -2px;
+    width: 24px;
+    height: 24px;
+    background: #f5f5f5;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.auth-form .remember-me:hover input[type="checkbox"] + span {
+    border-color: var(--primary-color);
+    background: #f8f2ef;
+}
+
+.auth-form .remember-me input[type="checkbox"]:checked + span {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.auth-form .remember-me input[type="checkbox"]:checked + span:after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 4px;
+    width: 6px;
+    height: 12px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .auth-container {
+        gap: 30px;
+        padding: 30px 15px;
+    }
+    
+    .auth-form-container, 
+    .auth-info {
+        padding: 30px;
+    }
+    
+    .auth-header h2 {
+        font-size: 2rem;
+    }
+    
+    .auth-info h3 {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .auth-container {
+        flex-direction: column;
+        gap: 30px;
+        padding: 20px 15px;
+        min-height: auto;
+    }
+    
+    .auth-form-container {
+        order: 0; /* Reset order for mobile to make it appear after auth-info */
+        width: 100%;
+        max-width: 100%;
+        padding: 25px 20px;
+    }
+    
+    .auth-info {
+        width: 100%;
+        padding: 25px 20px;
+    }
+    
+    .auth-features .feature {
+        margin-bottom: 18px;
+    }
+    
+    .auth-features .feature i {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+    
+    .auth-features .feature span {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-header h2 {
+        font-size: 1.8rem;
+    }
+    
+    .auth-info h3 {
+        font-size: 1.4rem;
+    }
+    
+    .auth-info p {
+        font-size: 1rem;
+    }
+    
+    .auth-form input {
+        padding: 12px 14px;
+    }
+    
+    .auth-form .btn-primary {
+        padding: 14px;
+    }
+    
+    .auth-form label {
+        font-size: 0.95rem;
+    }
+}

@@ -1,0 +1,95 @@
+/* Container for centered, responsive content with maximum width */
+.container {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Flexible row layout for main content sections */
+.row {
+    display: flex;
+    justify-content: space-between;
+    min-height: 85vh;
+    align-items: center;
+    padding: 60px 0;
+}
+
+/* Header bar with shadow and sticky positioning */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 5%;
+    background-color: var(--light-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* Footer section with dark background */
+.footer {
+    background-color: var(--footer-color);
+    color: #fff;
+    padding: 50px 0 20px;
+}
+
+/* Grid layout for footer content sections */
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 40px;
+}
+
+/* Left column for two-column layouts (slightly smaller) */
+.columnLeft {
+    width: 45%;
+}
+
+/* Right column for two-column layouts (slightly larger) */
+.columnRight {
+    width: 50%;
+}
+
+/* Responsive adjustments for tablet and mobile */
+@media (max-width: 768px) {
+    /* Stack footer sections into two columns on smaller screens */
+    .footer-content {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 30px;
+    }
+    
+    /* Full-width columns on mobile for better readability */
+    .columnLeft, .columnRight {
+        width: 100%;
+    }
+    
+    /* Stack main content sections vertically */
+    .row {
+        flex-direction: column;
+        gap: 40px;
+    }
+}
+
+/* Further adjustments for smaller mobile screens */
+@media (max-width: 576px) {
+    .container {
+        padding: 0 15px;
+    }
+    
+    /* Stack footer sections into single column on very small screens */
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+    
+    .footer {
+        padding: 40px 0 15px;
+    }
+    
+    /* Reduce vertical spacing on mobile */
+    .row {
+        padding: 40px 0;
+        min-height: auto;
+    }
+}
