@@ -1,5 +1,45 @@
 {% extends 'recipe_finder/base.html' %}
 
+{% block page_css %}
+<style>
+    /* Inline styles to ensure modal visibility */
+    .verification-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .verification-modal.show {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: flex !important;
+    }
+
+    /* Additional styles for certificate upload */
+    #modal-certificate-upload {
+        cursor: pointer;
+    }
+
+    #modal-certificate-preview {
+        display: none;
+    }
+
+    #modal-certificate-preview.show {
+        display: flex;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container profile-edit-container">
     <div class="edit-profile-header">
@@ -34,32 +74,26 @@
                                     <span>Click to change</span>
                                 </div>
                             {% else %}
-                                <div class="empty-avatar">
-                                    <i class="fas fa-user-circle"></i>
-                                    <span class="avatar-text">Add a photo</span>
+                                <div class="avatar-placeholder">
+                                    <i class="fas fa-user"></i>
                                 </div>
                             {% endif %}
                         </div>
                         
-                        <div class="upload-controls">
-                            <label for="{{ form.profile_pic.id_for_label }}" class="custom-file-upload">
-                                <i class="fas fa-cloud-upload-alt"></i> Select image
-                            </label>
-                            {{ form.profile_pic }}
-                            <div class="upload-actions">
-                                <p class="upload-help-text">
-                                    <i class="fas fa-info-circle"></i> Best practices:
-                                    <ul>
-                                        <li>Square image (500×500px)</li>
-                                        <li>JPEG or PNG format</li>
-                                        <li>Max size: 5MB</li>
-                                    </ul>
-                                </p>
-                                {% if profile.profile_pic %}
-                                    <button type="button" class="remove-pic-btn" title="Remove current profile picture">
-                                        <i class="fas fa-trash-alt"></i> Remove current photo
-                                    </button>
-                                {% endif %}
+                        <div class="upload-actions">
+                            <p class="upload-help-text">
+                                <i class="fas fa-info-circle"></i> Best practices:
+                                <ul>
+                                    <li>Square image (500×500px)</li>
+                                    <li>JPEG or PNG format</li>
+                                    <li>Max size: 5MB</li>
+                                </ul>
+                            </p>
+                            <div class="upload-controls">
+                                <label for="{{ form.profile_pic.id_for_label }}" class="custom-file-upload">
+                                    <i class="fas fa-cloud-upload-alt"></i> Select image
+                                </label>
+                                <div style="visibility: hidden;">{{ form.profile_pic }} </div>
                             </div>
                         </div>
                     </div>
@@ -100,16 +134,32 @@
                 <div class="form-section">
                     <h3><i class="fas fa-utensils"></i> Cooking Profile</h3>
                     
-                    <div class="form-group chef-toggle">
-                        <label class="switch-label">I am a professional chef</label>
-                        <div class="toggle-switch">
-                            {{ form.is_chef }}
-                            <label for="{{ form.is_chef.id_for_label }}" class="switch"></label>
-                        </div>
+                    <div class="form-group chef-info">
                         <p class="chef-note">
                             <i class="fas fa-info-circle"></i> 
                             Professional chefs can apply for verification after creating 5 recipes
                         </p>
+                        
+                        <!-- Hidden field to keep the backend working -->
+                        <div style="display: none;">
+                            {{ form.is_chef }}
+                        </div>
+                        
+                        <!-- Chef verification button - only shown if user has 5+ recipes and not already verified -->
+                        {% if recipes_count >= 5 and not profile.chef_verified %}
+                            <button id="verify-chef-btn" type="button" class="verify-chef-btn" onclick="openVerificationModal()">
+                                <i class="fas fa-check-circle"></i> Apply for Chef Verification
+                            </button>
+                        {% elif profile.chef_verified %}
+                            <div class="verification-status verified">
+                                <i class="fas fa-check-circle"></i> Your chef status is verified
+                                <span class="verification-badge"><i class="fas fa-shield-alt"></i></span>
+                            </div>
+                        {% elif recipes_count < 5 %}
+                            <div class="verification-status pending">
+                                <i class="fas fa-info-circle"></i> Create {{ recipes_needed }} more recipe(s) to be eligible for verification
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -157,12 +207,398 @@
         </div>
     </div>
 </div>
+
+<!-- Chef Verification Modal -->
+<div id="verification-modal" class="verification-modal">
+    <div class="verification-modal-content">
+        <button class="verification-modal-close" onclick="closeVerificationModal()">&times;</button>
+        
+        <div class="verification-modal-header">
+            <h2>Chef Verification</h2>
+            <p>Please provide your professional credentials to get verified as a professional chef. Our team will review your application.</p>
+        </div>
+        
+        <form id="verification-form" class="verification-form" action="{% url 'chef_verification' %}" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            
+            <div class="form-group">
+                <label for="full_name">Full Name*</label>
+                <input type="text" id="full_name" name="full_name" required value="{{ profile.full_name|default:'' }}" placeholder="Your full professional name">
+            </div>
+            
+            <div class="form-group">
+                <label for="current_position">Current Position*</label>
+                <input type="text" id="current_position" name="current_position" required placeholder="Head Chef, Sous Chef, etc.">
+            </div>
+            
+            <div class="form-group">
+                <label for="establishment">Establishment/Restaurant</label>
+                <input type="text" id="establishment" name="establishment" placeholder="Restaurant or establishment name">
+            </div>
+            
+            <div class="form-group">
+                <label for="modal_certificate_file">Professional Certificate*</label>
+                <label class="certificate-upload" for="modal_certificate_file">
+                    <i class="fas fa-file-upload"></i>
+                    <p>Upload your certificate or credentials</p>
+                    <small>Accepted formats: PDF, JPG, PNG (max 5MB)</small>
+                </label>
+                <input type="file" id="modal_certificate_file" name="certificate_file" accept=".pdf,.jpg,.jpeg,.png" 
+                       style="display: none;" 
+                       required onchange="handleCertificateFileChange(this)">
+                <div id="modal-certificate-preview" class="certificate-preview">
+                    <span id="modal-certificate-name"></span>
+                    <button type="button" id="modal-remove-certificate" onclick="removeCertificateFile()"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="additional_info">Additional Information</label>
+                <textarea id="additional_info" name="additional_info" rows="4" placeholder="Include any additional qualifications, experience, or other relevant information"></textarea>
+            </div>
+            
+            <div class="verification-form-actions">
+                <button type="button" id="cancel-verification" class="btn-cancel" onclick="closeVerificationModal()">Cancel</button>
+                <button type="submit" class="btn-submit">Submit Application</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// Add these direct functions to the global scope for immediate access
+function handleCertificateFileChange(input) {
+    console.log('Certificate file change handler called directly');
+    try {
+        console.log('Input element:', input);
+        const file = input.files[0];
+        console.log('Selected file:', file);
+        
+        if (file) {
+            // Validate file size (max 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            if (file.size > maxSize) {
+                alert('The file is too large. Maximum size is 5MB.');
+                // Clear the file input properly
+                const newInput = document.createElement('input');
+                newInput.type = 'file';
+                newInput.id = input.id;
+                newInput.name = input.name;
+                newInput.accept = input.accept;
+                newInput.required = input.required;
+                newInput.className = input.className;
+                newInput.style.cssText = input.style.cssText;
+                newInput.onchange = input.onchange;
+                input.parentNode.replaceChild(newInput, input);
+                return;
+            }
+            
+            // Validate file type
+            const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please upload a valid file (PDF, JPG, PNG).');
+                // Clear the file input properly
+                const newInput = document.createElement('input');
+                newInput.type = 'file';
+                newInput.id = input.id;
+                newInput.name = input.name;
+                newInput.accept = input.accept;
+                newInput.required = input.required;
+                newInput.className = input.className;
+                newInput.style.cssText = input.style.cssText;
+                newInput.onchange = input.onchange;
+                input.parentNode.replaceChild(newInput, input);
+                return;
+            }
+            
+            // Find the closest preview element within the same form group
+            let previewElement, nameElement;
+            
+            // First try to find within modal context
+            const modal = document.getElementById('verification-modal');
+            if (modal) {
+                console.log('Looking for preview elements in modal');
+                previewElement = modal.querySelector('#modal-certificate-preview');
+                nameElement = modal.querySelector('#modal-certificate-name');
+                console.log('In modal - Found preview element:', previewElement);
+                console.log('In modal - Found name element:', nameElement);
+            }
+            
+            // If not found, try regular approach
+            if (!previewElement) {
+                previewElement = document.getElementById('modal-certificate-preview');
+                console.log('Using document - Found preview element:', previewElement);
+            }
+            
+            if (!nameElement) {
+                nameElement = document.getElementById('modal-certificate-name');
+                console.log('Using document - Found name element:', nameElement);
+            }
+            
+            // Show the file name in the preview
+            if (nameElement) {
+                nameElement.textContent = file.name;
+                console.log('Set certificate name to:', file.name);
+            } else {
+                console.error('Certificate name element not found');
+            }
+            
+            if (previewElement) {
+                previewElement.classList.add('show');
+                console.log('Certificate preview shown', previewElement);
+            } else {
+                console.error('Certificate preview element not found');
+            }
+            
+            // File is valid, mark the input as valid for the form
+            if (input.setCustomValidity) {
+                input.setCustomValidity('');
+            }
+            
+            console.log('Certificate file selected:', file.name);
+        } else {
+            console.warn('No file selected or files property is empty');
+            // If no file is selected, set custom validity message
+            if (input.setCustomValidity) {
+                input.setCustomValidity('Please select a certificate file');
+            }
+        }
+    } catch (err) {
+        console.error('Error in handleCertificateFileChange:', err);
+    }
+}
+
+function removeCertificateFile() {
+    console.log('Remove certificate file function called directly');
+    
+    // Find elements in the modal context
+    const modal = document.getElementById('verification-modal');
+    let inputElement, previewElement;
+    
+    if (modal) {
+        inputElement = modal.querySelector('#modal_certificate_file');
+        previewElement = modal.querySelector('#modal-certificate-preview');
+    } 
+    
+    // If not found in modal, try regular approach
+    if (!inputElement) {
+        inputElement = document.getElementById('modal_certificate_file');
+    }
+    
+    if (!previewElement) {
+        previewElement = document.getElementById('modal-certificate-preview');
+    }
+    
+    // Clear the file input and hide preview
+    if (inputElement) {
+        // Create a new file input to replace the old one (most reliable way to clear a file input)
+        const newInput = document.createElement('input');
+        newInput.type = 'file';
+        newInput.id = inputElement.id;
+        newInput.name = inputElement.name;
+        newInput.accept = inputElement.accept;
+        newInput.required = inputElement.required;
+        newInput.className = inputElement.className;
+        newInput.style.cssText = inputElement.style.cssText;
+        newInput.onchange = inputElement.onchange;
+        
+        // Replace the old input with the new one
+        inputElement.parentNode.replaceChild(newInput, inputElement);
+        console.log('Certificate input cleared by replacement');
+    } else {
+        console.error('Certificate input element not found');
+    }
+    
+    if (previewElement) {
+        previewElement.classList.remove('show');
+        console.log('Certificate preview hidden');
+    } else {
+        console.error('Certificate preview element not found');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    initProfileImageHandling('{{ form.profile_pic.id_for_label }}');
+    // Fix: Instead of passing the full rendered element, just pass the ID
+    initProfileImageHandling('#id_profile_pic');
+    
+    // Set is_chef to true by default
+    const chefToggle = document.querySelector('input[name="is_chef"]');
+    if (chefToggle && !chefToggle.checked) {
+        chefToggle.checked = true;
+    }
+    
+    // Set up form validation for the verification form
+    const verificationForm = document.getElementById('verification-form');
+    if (verificationForm) {
+        console.log('Setting up verification form validation');
+        verificationForm.addEventListener('submit', function(e) {
+            console.log('Verification form submitted via event listener');
+            
+            try {
+                // Validate required fields
+                const fullName = this.querySelector('#full_name');
+                if (fullName && !fullName.value.trim()) {
+                    e.preventDefault();
+                    alert('Please enter your full name.');
+                    fullName.focus();
+                    return false;
+                }
+                
+                const currentPosition = this.querySelector('#current_position');
+                if (currentPosition && !currentPosition.value.trim()) {
+                    e.preventDefault();
+                    alert('Please enter your current position.');
+                    currentPosition.focus();
+                    return false;
+                }
+                
+                // Check for certificate file
+                const certificateInput = this.querySelector('#modal_certificate_file');
+                if (certificateInput) {
+                    const hasFile = certificateInput.files && certificateInput.files.length > 0;
+                    console.log('Certificate file input has file:', hasFile);
+                    
+                    if (!hasFile) {
+                        // Check if we have a preview showing (which would indicate a file was selected)
+                        const certificatePreview = this.querySelector('#modal-certificate-preview');
+                        const hasPreview = certificatePreview && certificatePreview.classList.contains('show');
+                        console.log('Certificate preview is showing:', hasPreview);
+                        
+                        if (!hasPreview) {
+                            e.preventDefault();
+                            alert('Please upload a certificate file.');
+                            
+                            // Try to focus the upload area
+                            const uploadArea = this.querySelector('#modal-certificate-upload');
+                            if (uploadArea) {
+                                uploadArea.focus();
+                            }
+                            
+                            return false;
+                        }
+                    }
+                }
+                
+                // Add form submission indicator/loader
+                const submitButton = this.querySelector('.btn-submit');
+                if (submitButton) {
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                    submitButton.disabled = true;
+                }
+                
+                // Submission will proceed if all validations pass
+                console.log('Verification form validation passed, submitting...');
+                return true;
+            } catch (err) {
+                console.error('Error during form validation:', err);
+                return true; // Allow form submission on error to avoid blocking the user
+            }
+        });
+    } else {
+        console.error('Verification form not found on page load');
+    }
 });
+
+// Create a direct global function for certificate upload to avoid DOMContentLoaded issues
+function openVerificationModal() {
+    console.log('Opening verification modal');
+    try {
+        var modal = document.getElementById('verification-modal');
+        console.log('Modal element:', modal);
+        
+        if (modal) {
+            console.log('Modal found, displaying it');
+            // First make the modal visible
+            modal.style.display = 'flex';
+            
+            // Then set up the certificate upload in the modal
+            setTimeout(function() {
+                try {
+                    // Make modal visible with a nice transition
+                    modal.style.opacity = '1';
+                    modal.style.visibility = 'visible';
+                    modal.classList.add('show');
+                    
+                    console.log('Setting up certificate upload in the modal');
+                    // File upload is now handled directly through the label
+                    
+                } catch (err) {
+                    console.error('Error in modal setup:', err);
+                }
+            }, 10);
+            
+            document.body.style.overflow = 'hidden';
+        } else {
+            console.error('Verification modal not found!');
+        }
+    } catch (err) {
+        console.error('Error in openVerificationModal:', err);
+    }
+}
+
+function closeVerificationModal() {
+    console.log('Closing verification modal');
+    var modal = document.getElementById('verification-modal');
+    if (modal) {
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+        setTimeout(function() {
+            modal.classList.remove('show');
+            if (!modal.classList.contains('show')) {
+                modal.style.display = 'none';
+            }
+        }, 300);
+        document.body.style.overflow = '';
+    }
+}
+
+function initProfileImageHandling(inputSelector) {
+    // Initialize profile image handling
+    const profilePicInput = document.querySelector(inputSelector);
+    const profilePicPreview = document.getElementById('profilePicPreview');
+    const currentPicPreview = document.querySelector('.current-pic-preview');
+    
+    if (profilePicInput && currentPicPreview) {
+        currentPicPreview.addEventListener('click', function() {
+            profilePicInput.click();
+        });
+        
+        if (profilePicInput) {
+            profilePicInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (profilePicPreview) {
+                            profilePicPreview.src = e.target.result;
+                        } else {
+                            // Create an image if none exists
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.id = 'profilePicPreview';
+                            img.alt = 'Profile picture preview';
+                            
+                            // Replace placeholder with image
+                            const placeholder = document.querySelector('.avatar-placeholder');
+                            if (placeholder) {
+                                placeholder.parentNode.replaceChild(img, placeholder);
+                            }
+                            
+                            // Add overlay
+                            const overlay = document.createElement('div');
+                            overlay.className = 'pic-overlay';
+                            overlay.innerHTML = '<i class="fas fa-camera"></i><span>Click to change</span>';
+                            currentPicPreview.appendChild(overlay);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    }
+}
 </script>
 {% endblock %}

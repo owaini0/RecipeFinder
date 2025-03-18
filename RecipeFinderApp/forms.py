@@ -35,13 +35,14 @@ class RecipeForm(forms.ModelForm):
         model = Recipe
         fields = [
             'title', 'description', 'ingredients', 'instructions', 
-            'cooking_time', 'prep_time', 'servings', 'difficulty', 'categories'
+            'cooking_time', 'prep_time', 'servings', 'difficulty', 'categories', 'notes'
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'ingredients': forms.Textarea(attrs={'rows': 6, 'placeholder': 'Enter one ingredient per line'}),
             'instructions': forms.Textarea(attrs={'rows': 8, 'placeholder': 'Enter one instruction step per line'}),
-            'categories': forms.CheckboxSelectMultiple(),
+            'notes': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Enter any additional notes about your recipe'}),
+            'categories': forms.SelectMultiple(attrs={'class': 'select2-categories', 'style': 'width: 100%', 'required': False}),
         }
     
     def clean_title(self):
@@ -64,14 +65,72 @@ class RecipeForm(forms.ModelForm):
         return title
 
 class RecipeImageForm(forms.ModelForm):
+    image = forms.ImageField(required=False)
+    
     class Meta:
         model = RecipeImage
         fields = ['image', 'caption', 'is_primary']
+    
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        if image:
+            # Check file extension
+            import os
+            ext = os.path.splitext(image.name)[1].lower()
+            valid_image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+            valid_video_extensions = ['.mp4', '.webm', '.ogg']
+            valid_extensions = valid_image_extensions + valid_video_extensions
+            
+            if not ext in valid_extensions:
+                raise forms.ValidationError(
+                    f"Unsupported file extension. Please use one of: {', '.join(valid_image_extensions)} for images or {', '.join(valid_video_extensions)} for videos"
+                )
+            
+            # Check file size (increased to 200MB)
+            if image.size > 200 * 1024 * 1024:  # 200MB limit
+                raise forms.ValidationError("File too large. Keep it under 200MB.")
+            
+            return image
+        
+        # When editing, an image might not be required
+        if hasattr(self, 'instance') and self.instance.pk:
+            return self.instance.image
+            
+        # For new recipes, image is not strictly required
+        return None
 
 class RecipeVideoForm(forms.ModelForm):
+    video = forms.FileField(required=False)
+    
     class Meta:
         model = RecipeVideo
         fields = ['video', 'caption']
+    
+    def clean_video(self):
+        video = self.cleaned_data.get('video')
+        if video:
+            # Check file extension
+            import os
+            ext = os.path.splitext(video.name)[1].lower()
+            valid_extensions = ['.mp4', '.webm', '.ogg']
+            
+            if not ext in valid_extensions:
+                raise forms.ValidationError(
+                    f"Unsupported file extension. Please use one of: {', '.join(valid_extensions)}"
+                )
+            
+            # Check file size (increased to 200MB)
+            if video.size > 200 * 1024 * 1024:  # 200MB limit
+                raise forms.ValidationError("Video file too large. Keep it under 200MB.")
+            
+            return video
+        
+        # When editing, a video might not be required
+        if hasattr(self, 'instance') and self.instance.pk:
+            return self.instance.video
+            
+        # For new recipes, video is not strictly required
+        return None
 
 class CommentForm(forms.ModelForm):
     class Meta:
@@ -84,9 +143,10 @@ class CommentForm(forms.ModelForm):
 class CollectionForm(forms.ModelForm):
     class Meta:
         model = Collection
-        fields = ['name', 'description', 'is_public']
+        fields = ['name', 'description', 'image', 'is_public']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
+            'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
         }
 
 class CategoryForm(forms.ModelForm):

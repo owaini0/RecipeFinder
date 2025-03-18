@@ -11,7 +11,7 @@
             <p>Join our community of food enthusiasts</p>
         </div>
         
-        <form method="post" class="auth-form">
+        <form method="post" class="auth-form" action="{% url 'register' %}" data-no-ajax="true" autocomplete="off" novalidate>
             {% csrf_token %}
             
             {% for field in form %}
@@ -44,10 +44,43 @@
             <li><i class="fas fa-folder-plus"></i> Create collections</li>
             <li><i class="fas fa-user-check"></i> Follow your favorite chefs</li>
         </ul>
-        
-        <div class="auth-image">
-            <img src="{% static 'images/cooking.jpg' %}" alt="Cooking" class="img-fluid">
-        </div>
     </div>
 </div>
+
+<script>
+// Ensure traditional form submission for registration
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Registration page protection loaded");
+    const registerForm = document.querySelector('.auth-form');
+    
+    if (registerForm) {
+        // Protect the form from AJAX interference
+        console.log("Protecting registration form from AJAX interference");
+        
+        // Completely disable fetch and XMLHttpRequest during the entire page load
+        const originalFetch = window.fetch;
+        const originalXHR = window.XMLHttpRequest;
+        
+        // Replace with dummy implementations that log and do nothing
+        window.fetch = function() {
+            console.error('Fetch blocked on registration page');
+            return Promise.reject('Registration page - fetch blocked');
+        };
+        
+        window.XMLHttpRequest = function() {
+            console.error('XHR blocked on registration page');
+            return {
+                open: function() {},
+                send: function() {},
+                setRequestHeader: function() {}
+            };
+        };
+    }
+});
+</script>
+{% endblock %}
+
+{% block page_js %}
+<!-- Add timestamp to prevent caching -->
+<script src="{% static 'js/pages/register.js' %}?v={{ timestamp }}"></script>
 {% endblock %}

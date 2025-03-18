@@ -1,4 +1,15 @@
 {% extends 'recipe_finder/base.html' %}
+{% load static %}
+
+{% block title %}{{ profile_user.username }}'s Profile - RecipeFinder{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/profile.css' %}">
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'js/pages/profile.js' %}"></script>
+{% endblock %}
 
 {% block content %}
 <div class="container profile-container">
@@ -33,21 +44,24 @@
                 
                 <div class="profile-stats">
                     <div class="stat">
-                        <span class="stat-value">{{ recipes.count }}</span>
+                        <span class="stat-value">{{ recipes.count|default:0 }}</span>
                         <span class="stat-label">Recipes</span>
                     </div>
                     <div class="stat">
-                        <span class="stat-value">{{ followers_count }}</span>
+                        <span class="stat-value">{{ followers_count|default:0 }}</span>
                         <span class="stat-label">Followers</span>
                     </div>
                     <div class="stat">
-                        <span class="stat-value">{{ following_count }}</span>
+                        <span class="stat-value">{{ following_count|default:0 }}</span>
                         <span class="stat-label">Following</span>
                     </div>
                 </div>
                 
                 {% if user.is_authenticated and user != profile.user %}
-                    <button class="follow-btn {% if is_following %}following{% endif %}" data-user-id="{{ profile.user.id }}" data-following="{{ is_following|lower }}">
+                    <button class="follow-btn {% if is_following %}following{% endif %}" 
+                            data-user-id="{{ profile.user.id }}" 
+                            data-user-name="{{ profile.user.username }}"
+                            data-following="{{ is_following|lower }}">
                         {% if is_following %}
                             <i class="fas fa-user-minus"></i> Unfollow
                         {% else %}
@@ -100,11 +114,13 @@
                     {% for recipe in recipes %}
                         <div class="recipe-card">
                             <div class="recipe-image">
+                                <a href="{% url 'recipe_detail' recipe.slug %}">
                                 {% if recipe.images.exists %}
                                     <img src="{{ recipe.images.first.image.url }}" alt="{{ recipe.title }}">
                                 {% else %}
                                     <img src="/media/recipe_images/default.jpg" alt="{{ recipe.title }}">
                                 {% endif %}
+                                </a>
                                 
                                 <div class="recipe-badge">
                                     <span class="difficulty-badge">{{ recipe.get_difficulty_display }}</span>
@@ -114,9 +130,37 @@
                                 <h3><a href="{% url 'recipe_detail' recipe.slug %}">{{ recipe.title }}</a></h3>
                                 <div class="recipe-meta">
                                     <span><i class="far fa-clock"></i> {{ recipe.total_time }} min</span>
-                                    <span><i class="far fa-heart"></i> {{ recipe.likes_count }}</span>
+                                    <span>
+                                        <a href="#" class="like-recipe-link" data-recipe-id="{{ recipe.id }}">
+                                            <i class="{% if user.is_authenticated and recipe.id in liked_recipes_ids %}fas{% else %}far{% endif %} fa-heart"></i> 
+                                            <span class="like-count">{{ recipe.likes_count }}</span>
+                                        </a>
+                                    </span>
+                                    <span>
+                                        <a href="{% url 'recipe_detail' recipe.slug %}#comments">
+                                            <i class="far fa-comment"></i> {{ recipe.comments_count }}
+                                        </a>
+                                    </span>
                                 </div>
                                 <p class="recipe-excerpt">{{ recipe.description|truncatechars:100 }}</p>
+                                <div class="recipe-author">
+                                    {% if recipe.user and recipe.user.username %}
+                                    <a href="{% url 'profile' recipe.user.username %}">
+                                        {% if recipe.user.userprofile.profile_pic %}
+                                            <img src="{{ recipe.user.userprofile.profile_pic.url }}" alt="{{ recipe.user.username }}">
+                                        {% else %}
+                                            <i class="fas fa-user-circle"></i>
+                                        {% endif %}
+                                        <span>{{ recipe.user.username }}
+                                            {% if recipe.user.userprofile.is_chef and recipe.user.userprofile.chef_verified %}
+                                                <i class="fas fa-check-circle verified-badge" title="Verified Chef"></i>
+                                            {% endif %}
+                                        </span>
+                                    </a>
+                                    {% else %}
+                                    <span><i class="fas fa-user-circle"></i> Anonymous</span>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     {% endfor %}
@@ -171,50 +215,6 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-$(document).ready(function() {
-    // Tab functionality
-    $('.tab').click(function() {
-        const tabId = $(this).data('tab');
-        
-        // Update active tab
-        $('.tab').removeClass('active');
-        $(this).addClass('active');
-        
-        // Show selected content
-        $('.tab-content').removeClass('active');
-        $(`#${tabId}-tab`).addClass('active');
-    });
-
-    // Follow/unfollow functionality
-    $('.follow-btn').click(function() {
-        const button = $(this);
-        const userId = button.data('user-id');
-        
-        $.ajax({
-            url: '{% url "follow_user" %}',
-            type: 'POST',
-            data: {
-                'user_id': userId,
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
-            },
-            success: function(data) {
-                if (data.following) {
-                    button.html('<i class="fas fa-user-minus"></i> Unfollow');
-                    button.addClass('following');
-                } else {
-                    button.html('<i class="fas fa-user-plus"></i> Follow');
-                    button.removeClass('following');
-                }
-                
-                // Update followers count
-                $('.stat:nth-child(2) .stat-value').text(data.followers_count);
-            }
-        });
-    });
-});
-</script>
+<!-- Chef Verification Modal has been moved to edit_profile.html -->
 {% endblock %}

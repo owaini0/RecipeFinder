@@ -3,18 +3,24 @@
 
 {% block title %}{% if editing %}Edit{% else %}Create{% endif %} Collection - RecipeFinder{% endblock %}
 
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/collection_form.css' %}">
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'js/pages/collection_form.js' %}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="form-container collection-form-container">
     <div class="form-header">
-        <div class="header-icon">
-            <i class="fas {% if editing %}fa-edit{% else %}fa-folder-plus{% endif %}"></i>
-        </div>
+        <i class="fas {% if editing %}fa-edit{% else %}fa-folder-plus{% endif %} header-icon"></i>
         <h1>{% if editing %}Edit{% else %}Create{% endif %} Collection</h1>
         <p>{% if editing %}Update your collection details{% else %}Organize your favorite recipes in a collection{% endif %}</p>
     </div>
     
     <div class="form-content">
-        <form method="post" class="standard-form">
+        <form method="post" class="standard-form" enctype="multipart/form-data">
             {% csrf_token %}
             
             {% if form.errors %}
@@ -52,20 +58,47 @@
                             <small class="form-text">Tell others what this collection is about (optional)</small>
                         </div>
                         
+                        <div class="form-group">
+                            <label for="{{ form.image.id_for_label }}">
+                                <i class="fas fa-image"></i> Collection Image
+                            </label>
+                            <div class="image-upload-container">
+                                <div class="image-preview-wrapper" id="image-preview-wrapper">
+                                    {% if form.instance.image %}
+                                        <div class="image-preview" id="image-preview">
+                                            <img src="{{ form.instance.image.url }}" alt="Collection Image">
+                                        </div>
+                                    {% else %}
+                                        <div class="image-preview empty" id="image-preview">
+                                            <i class="fas fa-image"></i>
+                                            <span>No image selected</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="image-upload-controls">
+                                    <label for="{{ form.image.id_for_label }}" class="custom-file-upload">
+                                        <i class="fas fa-upload"></i> Choose Image
+                                    </label>
+                                    {{ form.image }}
+                                    {% if form.image.errors %}
+                                        <div class="error-message">{{ form.image.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text">Upload an image that represents your collection (optional)</small>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="form-group privacy-toggle">
                             <div class="toggle-label">
                                 <i class="fas fa-globe"></i> Collection Privacy
                             </div>
                             <div class="toggle-container">
-                                <label class="switch">
-                                    {{ form.is_public }}
-                                    <span class="slider round"></span>
-                                </label>
                                 <div class="toggle-options">
                                     <span class="option-public {% if not editing or form.is_public.value %}active{% endif %}">Public</span>
                                     <span class="option-private {% if editing and not form.is_public.value %}active{% endif %}">Private</span>
                                 </div>
                             </div>
+                            <input type="hidden" name="is_public" value="{% if not editing or form.is_public.value %}true{% else %}false{% endif %}">
                             <small class="form-text">Public collections can be viewed by anyone. Private collections are only visible to you.</small>
                         </div>
                     </div>
@@ -74,89 +107,26 @@
                         <button type="submit" class="btn btn-primary pulse-effect">
                             <i class="fas fa-save"></i> {% if editing %}Save Changes{% else %}Create Collection{% endif %}
                         </button>
-                <i class="fas fa-trash"></i> Delete this collection
-            </button>
+                    </div>
+                </div>
+            </div>
         </form>
+        
+        {% if editing %}
+        <div class="form-divider"></div>
+        
+        <div class="danger-zone">
+            <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+            <p>Once you delete a collection, there is no going back. Please be certain.</p>
+            <form action="{% url 'collection_delete' collection.pk %}" method="post" class="delete-form">
+                {% csrf_token %}
+                <button type="submit" class="btn delete-btn" onclick="return confirm('Are you sure you want to delete this collection? This action cannot be undone.')">
+                    <i class="fas fa-trash-alt"></i> Delete this collection
+                </button>
+            </form>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
-
-<style>
-    .collection-form-container {
-        max-width: 800px;
-        margin: 40px auto;
-        padding: 0 20px;
-    }
-    
-    .form-header {
-        text-align: center;
-        margin-bottom: 30px;
-    }
-    
-    .form-header h1 {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 2.5rem;
-        color: var(--text-color);
-        margin-bottom: 10px;
-    }
-    
-    .form-content {
-        background-color: var(--light-color);
-        border-radius: 15px;
-        padding: 30px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-    }
-    
-    .form-section {
-        margin-bottom: 30px;
-    }
-    
-    .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-    }
-    
-    .form-check {
-        display: flex;
-        align-items: center;
-        padding-top: 10px;
-    }
-    
-    .form-check input[type="checkbox"] {
-        margin-right: 10px;
-        width: auto;
-    }
-    
-    .danger-zone {
-        margin-top: 40px;
-        background-color: #fff5f5;
-        border: 1px solid #ffcccc;
-        border-radius: 15px;
-        padding: 20px;
-    }
-    
-    .danger-zone h3 {
-        color: #cc0000;
-        margin-bottom: 10px;
-    }
-    
-    .delete-btn {
-        background-color: #cc0000;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        margin-top: 10px;
-    }
-    
-    .delete-btn:hover {
-        background-color: #aa0000;
-    }
-</style>
 {% endblock %}
+

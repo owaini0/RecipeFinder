@@ -3,6 +3,10 @@
 
 {% block title %}My Collections - RecipeFinder{% endblock %}
 
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/collection_list.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="collection-list-container">
     <div class="collection-list-header">
@@ -22,7 +26,9 @@
             {% for collection in collections %}
                 <div class="collection-card">
                     <div class="collection-cover">
-                        {% if collection.recipes.exists and collection.recipes.first.images.exists %}
+                        {% if collection.image %}
+                            <img src="{{ collection.image.url }}" alt="{{ collection.name }}">
+                        {% elif collection.recipes.exists and collection.recipes.first.images.exists %}
                             <img src="{{ collection.recipes.first.images.first.image.url }}" alt="{{ collection.name }}">
                         {% else %}
                             <img src="{% static 'images/collection-placeholder.jpg' %}" alt="{{ collection.name }}">
@@ -98,6 +104,12 @@
         padding: 12px 24px;
         font-size: 16px;
         font-weight: 600;
+    }
+
+    .create-collection-btn:hover {
+        background-color: var(--primary-color);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
     
     .collections-grid {

@@ -1,3 +1,4 @@
+/* Color scheme variables for consistent theming across the site */
 :root {
     --primary-color: #CAA188;
     --secondary-color: #81B29A;
@@ -8,12 +9,14 @@
     --light-color: #FFFFFF;
 }
 
+/* Reset default browser styling for consistent appearance */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* Main body styling with subtle textured background */
 body {
     background-color: var(--background-color);
     background-image: radial-gradient(#e8e0d0 0.5px, transparent 0.5px);
@@ -23,6 +26,63 @@ body {
     line-height: 1.6;
 }
 
+/* Heading styles with consistent font family and spacing */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', sans-serif;
+    margin-bottom: 1rem;
+}
+
+/* Default link styling without underlines */
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Responsive image sizing */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Remove default bullet points from lists */
+ul {
+    list-style: none;
+}
+
+/* Typography utility classes */
+.text-center {
+    text-align: center;
+}
+
+.text-primary {
+    color: var(--primary-color);
+}
+
+.text-secondary {
+    color: var(--secondary-color);
+}
+
+/* Spacing utility classes for consistent margins */
+.m-0 { margin: 0; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 1rem; }
+.mt-4 { margin-top: 1.5rem; }
+.mt-5 { margin-top: 3rem; }
+
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+.mb-4 { margin-bottom: 1.5rem; }
+.mb-5 { margin-bottom: 3rem; }
+
+/* Flexbox utility classes for layout control */
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+.justify-content-between { justify-content: space-between; }
+.justify-content-center { justify-content: center; }
+
+/* Header styling with sticky positioning and shadow */
 .header {
     display: flex;
     justify-content: space-between;
@@ -35,6 +95,37 @@ body {
     z-index: 100;
 }
 
+/* Mobile menu toggle button (hidden on desktop) */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 10px 15px;
+    transition: color 0.3s ease, background-color 0.3s ease;
+    z-index: 102; /* Ensure toggle is above nav */
+    border-radius: 4px;
+    position: relative;
+}
+
+.mobile-menu-toggle:hover {
+    color: var(--primary-color);
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.mobile-menu-toggle:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Mobile menu toggle button active state */
+.mobile-menu-toggle i.fa-times {
+    color: var(--primary-color);
+}
+
+/* Logo styling with icon and text alignment */
 .logo {
     display: flex;
     align-items: center;
@@ -53,12 +144,14 @@ body {
     letter-spacing: -0.5px;
 }
 
-nav ul {
+/* Navigation menu horizontal layout */
+.main-nav ul {
     list-style-type: none;
     display: flex;
     gap: 35px;
 }
 
+/* Navigation link styling with hover effects */
 .nav-link {
     text-decoration: none;
     color: var(--text-color);
@@ -72,6 +165,7 @@ nav ul {
     color: var(--primary-color);
 }
 
+/* Animated underline effect for navigation links */
 .nav-link::after {
     content: '';
     position: absolute;
@@ -87,12 +181,97 @@ nav ul {
     width: 100%;
 }
 
+/* Responsive styles for the header and navigation */
+@media (max-width: 768px) {
+    .header {
+        padding: 15px 5%;
+    }
+    
+    .header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .mobile-menu-toggle {
+        display: block;
+        z-index: 102; /* Ensure toggle is above nav */
+    }
+    
+    .main-nav {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background-color: var(--light-color);
+        padding: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.5s ease, padding 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        z-index: 101;
+        visibility: hidden; /* Hide by default */
+    }
+    
+    .main-nav.active {
+        max-height: 300px;
+        padding: 15px 0;
+        overflow-y: auto;
+        visibility: visible; /* Show when active */
+    }
+    
+    .main-nav ul {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .main-nav ul li {
+        width: 100%;
+    }
+    
+    .main-nav ul li a {
+        display: block;
+        padding: 12px 5%;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .nav-link::after {
+        display: none;
+    }
+    
+    .nav-link:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+}
+
+@media (max-width: 576px) {
+    .header {
+        padding: 12px 4%;
+    }
+    
+    .logo {
+        gap: 8px;
+    }
+    
+    .logo i {
+        font-size: 1.5rem;
+    }
+    
+    .header h1 {
+        font-size: 1.3rem;
+    }
+    
+    .main-nav.active {
+        max-height: 80vh; /* Limit height on very small screens */
+    }
+}
+
+/* Main container for content with responsive width */
 .container {
     max-width: 1300px;
     margin: 0 auto;
     padding: 0 20px;
 }
 
+/* Row layout for side-by-side content sections */
 .row {
     display: flex;
     justify-content: space-between;
@@ -101,6 +280,7 @@ nav ul {
     padding: 60px 0;
 }
 
+/* Column layouts for two-column design */
 .columnLeft {
     width: 45%;
 }
@@ -109,10 +289,12 @@ nav ul {
     width: 50%;
 }
 
+/* Main content area padding */
 .main-content {
     padding: 20px 0;
 }
 
+/* Hero section title with decorative underline */
 .titleDiscover {
     font-size: 3.5rem;
     font-weight: 800;
@@ -134,6 +316,7 @@ nav ul {
     border-radius: 3px;
 }
 
+/* Hero section description text */
 .descriptionDiscover {
     font-size: 1.2rem;
     margin-bottom: 40px;
@@ -141,12 +324,14 @@ nav ul {
     line-height: 1.7;
 }
 
+/* Button container for hero section */
 .buttons {
     display: flex;
     gap: 20px;
     margin-top: 30px;
 }
 
+/* Primary action button with hover animation */
 .find-recipe {
     background-color: var(--primary-color);
     border: none;
@@ -173,6 +358,7 @@ nav ul {
     letter-spacing: 0.5px;
 }
 
+/* Secondary action button with hover color change */
 .learn-more {
     background-color: transparent;
     border: 2px solid var(--secondary-color);
@@ -196,7 +382,6 @@ nav ul {
     font-weight: 600;
     color: var(--secondary-color);
     letter-spacing: 0.5px;
-    transition: color 0.3s ease;
 }
 
 .learn-more:hover a {
@@ -238,9 +423,9 @@ nav ul {
 }
 
 .centered-image {
-    width: 85%;
-    height: auto;
-    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     transition: transform 0.5s ease;
     z-index: 2;
 }
@@ -316,12 +501,14 @@ nav ul {
     font-family: 'Montserrat', sans-serif;
 }
 
+/* Footer section with dark background */
 .footer {
     background-color: var(--footer-color);
     color: #fff;
     padding: 50px 0 20px;
 }
 
+/* Grid layout for footer content sections */
 .footer-content {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -392,6 +579,41 @@ nav ul {
     font-size: 14px;
 }
 
+/* Footer responsiveness */
+@media (max-width: 768px) {
+    .footer-content {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 30px;
+    }
+}
+
+@media (max-width: 576px) {
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+    
+    .footer {
+        padding: 40px 0 15px;
+    }
+    
+    .footer-section {
+        padding-bottom: 15px;
+    }
+    
+    .footer-section h3 {
+        margin-bottom: 15px;
+    }
+    
+    .social-links {
+        justify-content: center;
+    }
+    
+    .copyright {
+        padding-top: 30px;
+    }
+}
+
 /* Profile Page */
 .profile-container {
     padding: 40px 0;
@@ -400,6 +622,7 @@ nav ul {
 }
 
 .profile-header {
+    margin-top: 50px;
     background: var(--light-color);
     border-radius: 15px;
     padding: 30px;
@@ -535,6 +758,7 @@ nav ul {
     border-radius: 15px;
     padding: 30px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    margin-bottom: 50px;
 }
 
 .profile-nav {
@@ -970,6 +1194,13 @@ nav ul {
     height: 200px;
 }
 
+.recipe-image a {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
 .recipe-image img {
     width: 100%;
     height: 100%;
@@ -978,18 +1209,19 @@ nav ul {
 
 .recipe-badge {
     position: absolute;
-    top: 10px;
+    bottom: 10px;
     right: 10px;
     display: flex;
-    gap: 10px;
+    gap: 5px;
 }
 
 .difficulty-badge {
-    background: rgba(0, 0, 0, 0.6);
     color: white;
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    line-height: 1;
+    display: inline-block;
 }
 
 .chef-badge {
@@ -1020,6 +1252,28 @@ nav ul {
     margin-bottom: 15px;
     color: #666;
     font-size: 14px;
+}
+
+.recipe-meta a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.recipe-meta a:hover {
+    color: var(--primary-color);
+}
+
+.recipe-meta .like-recipe-link:hover {
+    color: #dc3545;
+}
+
+.recipe-meta .like-recipe-link .fas.fa-heart {
+    color: #dc3545;
+}
+
+.recipe-meta .like-recipe-link:hover .far.fa-heart {
+    color: #dc3545;
 }
 
 .recipe-excerpt {
@@ -1188,6 +1442,11 @@ nav ul {
     border: none;
 }
 
+.btn-primary:hover {
+    background-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
 .btn-outline {
     background: transparent;
     border: 2px solid var(--primary-color);
@@ -1207,17 +1466,6 @@ nav ul {
     position: relative;
 }
 
-.form-progress-tracker:after {
-    content: '';
-    position: absolute;
-    top: 15px;
-    left: 40px;
-    right: 40px;
-    height: 3px;
-    background: #e6e6e6;
-    z-index: 1;
-}
-
 .progress-step {
     display: flex;
     flex-direction: column;
@@ -1226,6 +1474,7 @@ nav ul {
     z-index: 2;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin-bottom: 10px;
 }
 
 .step-number {
@@ -1392,6 +1641,7 @@ nav ul {
 
 .empty-avatar {
     display: flex;
+    font-size: 1000% !important;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -1405,7 +1655,6 @@ nav ul {
 }
 
 .empty-avatar i {
-    font-size: 48px;
     color: #ccc;
 }
 
@@ -1635,24 +1884,21 @@ input[type="file"] {
 
 @media (max-width: 768px) {
     .edit-profile-content {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
     
     .profile-pic-upload {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
+        margin-right: 0;
+        margin-bottom: 30px;
     }
     
     .upload-controls {
-        display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
     }
     
     .chef-toggle {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
     }
 }
+

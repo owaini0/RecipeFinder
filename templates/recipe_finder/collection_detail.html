@@ -1,20 +1,98 @@
 {% extends 'recipe_finder/base.html' %}
 {% load static %}
 
-{% block title %}{{ collection.name }} - RecipeFinder Collections{% endblock %}
+{% block title %}{{ collection.name }} - RecipeFinder{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/collection_detail.css' %}">
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'js/pages/collection_detail.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize tooltips
+        $('[data-bs-toggle="tooltip"]').tooltip();
+        
+        // Handle recipe removal with animation
+        $('.remove-from-collection').on('click', function(e) {
+            e.preventDefault();
+            
+            const recipeId = $(this).data('recipe-id');
+            const collectionId = $(this).data('collection-id');
+            const recipeCard = $(this).closest('.recipe-card');
+            const csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
+            
+            // Add removing animation
+            recipeCard.addClass('removing');
+            
+            // Make AJAX request to remove recipe from collection
+            $.ajax({
+                url: "{% url 'add_to_collection' %}",
+                type: 'POST',
+                data: {
+                    'recipe_id': recipeId,
+                    'collection_id': collectionId,
+                    'csrfmiddlewaretoken': csrf_token
+                },
+                success: function(response) {
+                    // After animation completes, remove the card
+                    setTimeout(function() {
+                        recipeCard.remove();
+                        
+                        // Update recipe count
+                        const currentCount = parseInt($('.recipe-count').text());
+                        $('.recipe-count').text(currentCount - 1);
+                        
+                        // If no recipes left, show empty message
+                        if (currentCount - 1 === 0) {
+                            $('.recipes-grid').html(`
+                                <div class="no-recipes">
+                                    <i class="fas fa-folder-open"></i>
+                                    <h3>This collection is empty</h3>
+                                    <p>No recipes have been added to this collection yet.</p>
+                                    <a href="{% url 'recipe_list' %}" class="btn btn-primary">Browse Recipes</a>
+                                </div>
+                            `);
+                        }
+                    }, 500);
+                },
+                error: function() {
+                    recipeCard.removeClass('removing');
+                    alert('An error occurred. Please try again.');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
 
 {% block content %}
+<!-- Hidden CSRF token for AJAX requests -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
 <div class="collection-detail-container">
     <div class="collection-header">
+        <div class="collection-image">
+            {% if collection.image %}
+                <img src="{{ collection.image.url }}" alt="{{ collection.name }}">
+            {% else %}
+                <div class="collection-image-placeholder">
+                    <i class="fas fa-folder-open"></i>
+                </div>
+            {% endif %}
+        </div>
         <div class="collection-info">
             <h1>{{ collection.name }}</h1>
             
             <div class="collection-meta">
-                <span><i class="fas fa-utensils"></i> {{ recipes|length }} recipes</span>
+                <span><i class="fas fa-utensils"></i> <span class="recipe-count">{{ recipes|length }}</span> recipes</span>
                 <span><i class="fas fa-user"></i> Created by {{ collection.user.username }}</span>
                 <span><i class="fas fa-calendar"></i> Created {{ collection.created_at|date:"F j, Y" }}</span>
                 {% if not collection.is_public %}
-                    <span class="private-badge"><i class="fas fa-lock"></i> Private collection</span>
+                    <span class="private-badge" data-bs-toggle="tooltip" title="Only you can see this collection"><i class="fas fa-lock"></i> Private collection</span>
+                {% else %}
+                    <span class="public-badge" data-bs-toggle="tooltip" title="Anyone can see this collection"><i class="fas fa-globe"></i> Public collection</span>
                 {% endif %}
             </div>
             
@@ -29,6 +107,10 @@
                     <a href="{% url 'collection_edit' collection.pk %}" class="btn btn-primary">
                         <i class="fas fa-edit"></i> Edit Collection
                     </a>
+                    
+                    <a href="{% url 'collection_share' collection.pk %}" class="btn btn-outline-success ms-2">
+                        <i class="fas fa-share-alt"></i> Share Collection
+                    </a>
                 </div>
             {% endif %}
         </div>
@@ -36,21 +118,42 @@
     
     {% if recipes %}
         <div class="recipes-section">
-            <h2>Recipes in this Collection</h2>
+            <div class="section-header">
+                <h2>Recipes in this Collection</h2>
+                
+                {% if request.user == collection.user %}
+                <div class="section-actions">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-sort"></i> Sort
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdown">
+                            <li><a class="dropdown-item" href="?sort=name">Name</a></li>
+                            <li><a class="dropdown-item" href="?sort=date">Date added</a></li>
+                            <li><a class="dropdown-item" href="?sort=likes">Most liked</a></li>
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
             
             <div class="recipes-grid">
                 {% for recipe in recipes %}
                     <div class="recipe-card">
                         <div class="recipe-image">
+                            <a href="{% url 'recipe_detail' recipe.slug %}">
                             {% if recipe.images.exists %}
                                 <img src="{{ recipe.images.first.image.url }}" alt="{{ recipe.title }}">
                             {% else %}
                                 <img src="{% static 'images/recipe-placeholder.jpg' %}" alt="{{ recipe.title }}">
                             {% endif %}
+                            </a>
                             <div class="recipe-badge">
                                 <span class="difficulty-badge {{ recipe.difficulty }}">{{ recipe.get_difficulty_display }}</span>
-                                {% if recipe.author.profile.chef_verified %}
-                                    <span class="chef-badge"><i class="fas fa-check-circle"></i> Chef</span>
+                                {% if recipe.author.userprofile.is_chef and recipe.author.userprofile.chef_verified %}
+                                <span class="chef-badge" data-bs-toggle="tooltip" title="Created by a verified chef">
+                                    <i class="fas fa-check-circle"></i> Chef
+                                </span>
                                 {% endif %}
                             </div>
                         </div>
@@ -58,8 +161,17 @@
                             <h3><a href="{% url 'recipe_detail' recipe.slug %}">{{ recipe.title }}</a></h3>
                             <div class="recipe-meta">
                                 <span><i class="far fa-clock"></i> {{ recipe.total_time }} min</span>
-                                <span><i class="far fa-heart"></i> {{ recipe.likes_count }}</span>
-                                <span><i class="far fa-comment"></i> {{ recipe.comments_count }}</span>
+                                <span>
+                                    <a href="#" class="like-recipe-link" data-recipe-id="{{ recipe.id }}">
+                                        <i class="{% if user.is_authenticated and recipe.id in liked_recipes_ids %}fas{% else %}far{% endif %} fa-heart"></i> 
+                                        <span class="like-count">{{ recipe.likes_count }}</span>
+                                    </a>
+                                </span>
+                                <span>
+                                    <a href="{% url 'recipe_detail' recipe.slug %}#comments">
+                                        <i class="far fa-comment"></i> {{ recipe.comments_count }}
+                                    </a>
+                                </span>
                             </div>
                             <p class="recipe-excerpt">{{ recipe.description|truncatechars:100 }}</p>
                             <div class="recipe-author">
@@ -69,13 +181,21 @@
                                     {% else %}
                                         <i class="fas fa-user-circle"></i>
                                     {% endif %}
-                                    <span>{{ recipe.author.username }}</span>
+                                    <span>{{ recipe.author.username }}
+                                        {% if recipe.author.profile.is_chef and recipe.author.profile.chef_verified %}
+                                            <i class="fas fa-check-circle verified-badge" title="Verified Chef"></i>
+                                        {% endif %}
+                                    </span>
                                 </a>
                             </div>
                             
                             {% if request.user == collection.user %}
                                 <div class="recipe-collection-actions">
-                                    <button class="remove-from-collection" data-recipe-id="{{ recipe.id }}" data-collection-id="{{ collection.id }}">
+                                    <button class="remove-from-collection" 
+                                            data-recipe-id="{{ recipe.id }}" 
+                                            data-collection-id="{{ collection.id }}"
+                                            data-bs-toggle="tooltip"
+                                            title="Remove from collection">
                                         <i class="fas fa-trash-alt"></i> Remove from collection
                                     </button>
                                 </div>
@@ -98,148 +218,4 @@
         </div>
     {% endif %}
 </div>
-
-<style>
-    .collection-detail-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 40px 20px;
-    }
-    
-    .collection-header {
-        background-color: var(--light-color);
-        border-radius: 15px;
-        padding: 30px;
-        margin-bottom: 30px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-    }
-    
-    .collection-header h1 {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 2.5rem;
-        color: var(--text-color);
-        margin-bottom: 15px;
-    }
-    
-    .collection-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        color: #666;
-        margin-bottom: 20px;
-    }
-    
-    .collection-meta span {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    
-    .private-badge {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 14px;
-    }
-    
-    .collection-description {
-        margin-bottom: 20px;
-        line-height: 1.6;
-        color: #444;
-    }
-    
-    .collection-actions {
-        margin-top: 20px;
-    }
-    
-    .recipes-section {
-        margin-top: 40px;
-    }
-    
-    .recipes-section h2 {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 1.8rem;
-        margin-bottom: 20px;
-        color: var(--text-color);
-    }
-    
-    .no-recipes {
-        text-align: center;
-        padding: 60px 0;
-        background-color: var(--light-color);
-        border-radius: 15px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-    }
-    
-    .no-recipes i {
-        font-size: 4rem;
-        color: #ddd;
-        margin-bottom: 20px;
-    }
-    
-    .no-recipes h3 {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 1.5rem;
-        margin-bottom: 10px;
-        color: #666;
-    }
-    
-    .no-recipes p {
-        color: #888;
-        margin-bottom: 20px;
-    }
-    
-    .recipe-collection-actions {
-        margin-top: 15px;
-    }
-    
-    .remove-from-collection {
-        background: none;
-        border: 1px solid #ddd;
-        color: #666;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .remove-from-collection:hover {
-        border-color: #f44;
-        color: #f44;
-    }
-</style>
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle removing recipes from collection
-    document.querySelectorAll('.remove-from-collection').forEach(button => {
-        button.addEventListener('click', function() {
-            const recipeId = this.getAttribute('data-recipe-id');
-            const collectionId = this.getAttribute('data-collection-id');
-            
-            if (confirm('Are you sure you want to remove this recipe from the collection?')) {
-                fetch('{% url "add_to_collection" %}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: `recipe_id=${recipeId}&collection_id=${collectionId}`
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.in_collection) {
-                        // Recipe was removed, reload the page
-                        window.location.reload();
-                    }
-                });
-            }
-        });
-    });
-});
-</script>
-{% endblock %}
 {% endblock %}

@@ -3,6 +3,10 @@
 
 {% block title %}RecipeFinder - Your Home for Recipes{% endblock %}
 
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
+{% endblock %}
+
 {% block content %}
     <div class="row">
         <div class="columnLeft">
@@ -32,7 +36,7 @@
         </div>
         <div class="columnRight">
             <div class="image-box">
-                <img src="{% static 'images/hero-image.jpg' %}" alt="Delicious recipe" class="centered-image">
+                <img src="{% static 'images/home_img.jpg' %}" alt="Delicious recipe" class="centered-image">
             </div>
         </div>
     </div>
@@ -78,24 +82,32 @@
             {% for recipe in popular_recipes %}
                 <div class="recipe-card">
                     <div class="recipe-image">
+                        <a href="{% url 'recipe_detail' recipe.slug %}">
                         {% if recipe.images.exists %}
                             <img src="{{ recipe.images.first.image.url }}" alt="{{ recipe.title }}">
                         {% else %}
                             <img src="{% static 'images/recipe-placeholder.jpg' %}" alt="{{ recipe.title }}">
                         {% endif %}
+                        </a>
                         <div class="recipe-badge">
                             <span class="difficulty-badge {{ recipe.difficulty }}">{{ recipe.get_difficulty_display }}</span>
-                            {% if recipe.author.profile.chef_verified %}
-                                <span class="chef-badge"><i class="fas fa-check-circle"></i> Chef</span>
-                            {% endif %}
                         </div>
                     </div>
                     <div class="recipe-info">
                         <h3><a href="{% url 'recipe_detail' recipe.slug %}">{{ recipe.title }}</a></h3>
                         <div class="recipe-meta">
                             <span><i class="far fa-clock"></i> {{ recipe.total_time }} min</span>
-                            <span><i class="far fa-heart"></i> {% if recipe.total_likes %}{{ recipe.total_likes }}{% else %}{{ recipe.likes_count }}{% endif %}</span>
-                            <span><i class="far fa-comment"></i> {{ recipe.comments_count }}</span>
+                            <span>
+                                <a href="#" class="like-recipe-link" data-recipe-id="{{ recipe.id }}">
+                                    <i class="{% if user.is_authenticated and recipe.id in liked_recipes_ids %}fas{% else %}far{% endif %} fa-heart"></i> 
+                                    <span class="like-count">{% if recipe.total_likes %}{{ recipe.total_likes }}{% else %}{{ recipe.likes_count }}{% endif %}</span>
+                                </a>
+                            </span>
+                            <span>
+                                <a href="{% url 'recipe_detail' recipe.slug %}#comments">
+                                    <i class="far fa-comment"></i> {{ recipe.comments_count }}
+                                </a>
+                            </span>
                         </div>
                         <p class="recipe-excerpt">{{ recipe.description|truncatechars:100 }}</p>
                         <div class="recipe-author">
@@ -105,7 +117,11 @@
                                 {% else %}
                                     <i class="fas fa-user-circle"></i>
                                 {% endif %}
-                                <span>{{ recipe.author.username }}</span>
+                                <span>{{ recipe.author.username }}
+                                    {% if recipe.author.profile.is_chef and recipe.author.profile.chef_verified %}
+                                        <i class="fas fa-check-circle verified-badge" title="Verified Chef"></i>
+                                    {% endif %}
+                                </span>
                             </a>
                         </div>
                     </div>
@@ -128,11 +144,13 @@
             {% for recipe in newest_recipes %}
                 <div class="recipe-card">
                     <div class="recipe-image">
+                        <a href="{% url 'recipe_detail' recipe.slug %}">
                         {% if recipe.images.exists %}
                             <img src="{{ recipe.images.first.image.url }}" alt="{{ recipe.title }}">
                         {% else %}
                             <img src="{% static 'images/recipe-placeholder.jpg' %}" alt="{{ recipe.title }}">
                         {% endif %}
+                        </a>
                         <div class="recipe-badge">
                             <span class="difficulty-badge {{ recipe.difficulty }}">{{ recipe.get_difficulty_display }}</span>
                         </div>

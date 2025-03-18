@@ -1,0 +1,83 @@
+/* Login Page Specific Styles */
+.auth-container {
+    display: flex;
+    gap: 40px;
+    padding: 40px;
+    min-height: 80vh;
+    align-items: center;
+}
+
+.auth-form-container {
+    flex: 1;
+    max-width: 500px;
+    background: var(--light-color);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-header h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.auth-info {
+    flex: 1;
+    padding: 40px;
+}
+
+.auth-features {
+    margin: 30px 0;
+}
+
+.feature {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
+.feature i {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.auth-image {
+    margin-top: 30px;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.auth-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .auth-container {
+        flex-direction: column;
+        padding: 20px;
+    }
+
+    .auth-form-container {
+        max-width: 100%;
+    }
+
+    .auth-info {
+        padding: 20px 0;
+        text-align: center;
+    }
+
+    .feature {
+        justify-content: center;
+    }
+}

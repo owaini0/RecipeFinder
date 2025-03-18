@@ -1,7 +1,9 @@
 from django.contrib import admin
+from django.utils import timezone
 from .models import (
     UserProfile, Category, Recipe, RecipeImage, 
-    RecipeVideo, Like, Comment, Follow, Collection
+    RecipeVideo, Like, Comment, Follow, Collection,
+    ChefVerification
 )
 
 class UserProfileAdmin(admin.ModelAdmin):
@@ -46,6 +48,66 @@ class CollectionAdmin(admin.ModelAdmin):
     list_filter = ('is_public', 'created_at')
     search_fields = ('name', 'description')
 
+class ChefVerificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'full_name', 'current_position', 'status', 'submitted_at')
+    list_filter = ('status', 'submitted_at')
+    search_fields = ('user__username', 'full_name', 'establishment')
+    readonly_fields = ('submitted_at',)
+    fieldsets = (
+        ('User Information', {
+            'fields': ('user', 'full_name', 'current_position', 'establishment')
+        }),
+        ('Verification Information', {
+            'fields': ('certificate', 'additional_info', 'submitted_at')
+        }),
+        ('Review', {
+            'fields': ('status', 'processed_at', 'admin_notes')
+        }),
+    )
+    
+    # Custom action to approve verification
+    actions = ['approve_verification', 'reject_verification']
+    
+    def approve_verification(self, request, queryset):
+        # Update verification status and timestamp
+        for verification in queryset:
+            if verification.status != 'approved':
+                verification.status = 'approved'
+                verification.processed_at = timezone.now()
+                verification.save()
+                
+                # Update user profile to mark as verified chef
+                profile = verification.user.profile
+                profile.chef_verified = True
+                profile.save()
+        
+        self.message_user(request, f"Successfully approved {queryset.count()} verification(s)")
+    approve_verification.short_description = "Approve selected verifications"
+    
+    def reject_verification(self, request, queryset):
+        # Update verification status and timestamp
+        for verification in queryset:
+            if verification.status != 'rejected':
+                verification.status = 'rejected'
+                verification.processed_at = timezone.now()
+                verification.save()
+        
+        self.message_user(request, f"Successfully rejected {queryset.count()} verification(s)")
+    reject_verification.short_description = "Reject selected verifications"
+    
+    # Save model to automatically set processed_at time
+    def save_model(self, request, obj, form, change):
+        if 'status' in form.changed_data:
+            obj.processed_at = timezone.now()
+            
+            # If approving, update the user's profile
+            if obj.status == 'approved':
+                profile = obj.user.profile
+                profile.chef_verified = True
+                profile.save()
+            
+        super().save_model(request, obj, form, change)
+
 admin.site.register(UserProfile, UserProfileAdmin)
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Recipe, RecipeAdmin)
@@ -53,3 +115,4 @@ admin.site.register(Comment, CommentAdmin)
 admin.site.register(Like, LikeAdmin)
 admin.site.register(Follow, FollowAdmin)
 admin.site.register(Collection, CollectionAdmin)
+admin.site.register(ChefVerification, ChefVerificationAdmin)
