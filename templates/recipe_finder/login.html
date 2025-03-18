@@ -9,6 +9,26 @@
 
 {% block content %}
 <div class="auth-container">
+    <div class="auth-info">
+        <h3>Welcome to RecipeFinder</h3>
+        <p>Log in to access your saved recipes, collections, and more!</p>
+        
+        <div class="auth-features">
+            <div class="feature">
+                <i class="fas fa-utensils"></i>
+                <span>Discover new recipes</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-book-open"></i>
+                <span>Access your cookbook</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-users"></i>
+                <span>Connect with chefs</span>
+            </div>
+        </div>
+    </div>
+    
     <div class="auth-form-container">
         <div class="auth-header">
             <h2>Welcome Back</h2>
@@ -30,9 +50,12 @@
                 </div>
             {% endfor %}
             
-            <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input" id="remember-me" name="remember_me">
-                <label class="form-check-label" for="remember-me">Remember me</label>
+            <div class="form-group">
+                <label class="remember-me" for="remember-me">
+                    <input type="checkbox" id="remember-me" name="remember_me">
+                    <span></span>
+                    Remember me
+                </label>
             </div>
             
             <button type="submit" class="btn btn-primary">Log In</button>
@@ -40,26 +63,6 @@
         
         <div class="auth-footer">
             <p>Don't have an account? <a href="{% url 'register' %}">Sign Up</a></p>
-        </div>
-    </div>
-    
-    <div class="auth-info">
-        <h3>Welcome to RecipeFinder</h3>
-        <p>Log in to access your saved recipes, collections, and more!</p>
-        
-        <div class="auth-features">
-            <div class="feature">
-                <i class="fas fa-utensils"></i>
-                <span>Discover new recipes</span>
-            </div>
-            <div class="feature">
-                <i class="fas fa-book-open"></i>
-                <span>Access your cookbook</span>
-            </div>
-            <div class="feature">
-                <i class="fas fa-users"></i>
-                <span>Connect with chefs</span>
-            </div>
         </div>
     </div>
 </div>

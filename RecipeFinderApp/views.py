@@ -18,6 +18,7 @@ from .forms import (
     RecipeVideoForm, SearchForm
 )
 from django.utils import timezone
+from django.db import transaction
 
 def home(request):
     """
@@ -58,6 +59,7 @@ def register(request):
     Creates both a User object and its associated UserProfile.
     """
     if request.user.is_authenticated:
+        messages.info(request, 'You are already logged in.')
         return redirect('home')
     
     # Block any AJAX requests to this endpoint
@@ -67,10 +69,34 @@ def register(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, 'Registration successful! Welcome to RecipeFinder!')
-            return redirect('home')
+            try:
+                # Use transaction to ensure database integrity
+                with transaction.atomic():
+                    # Create the user account
+                    user = form.save()
+                    
+                    # Create user profile using get_or_create to avoid uniqueness errors
+                    UserProfile.objects.get_or_create(user=user)
+                
+                # Log the user in
+                username = form.cleaned_data.get('username')
+                password = form.cleaned_data.get('password1')
+                user = authenticate(username=username, password=password)
+                
+                if user is not None:
+                    login(request, user)
+                    messages.success(request, f'Welcome to RecipeFinder, {username}! Your account has been created successfully.')
+                    return redirect('home')
+                else:
+                    messages.warning(request, 'Account created but automatic login failed. Please log in manually.')
+                    return redirect('login')
+            except Exception as e:
+                messages.error(request, f'An error occurred during registration: {str(e)}')
+        else:
+            # If form is invalid, display error message to help user fix the issues
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field.replace("_", " ").title()}: {error}')
     else:
         form = UserRegistrationForm()
     

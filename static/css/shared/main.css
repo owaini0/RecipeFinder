@@ -128,7 +128,7 @@ ul {
 /* Logo styling with icon and text alignment */
 .logo {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 12px;
 }
 
@@ -179,89 +179,6 @@ ul {
 
 .nav-link:hover::after {
     width: 100%;
-}
-
-/* Responsive styles for the header and navigation */
-@media (max-width: 768px) {
-    .header {
-        padding: 15px 5%;
-    }
-    
-    .header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .mobile-menu-toggle {
-        display: block;
-        z-index: 102; /* Ensure toggle is above nav */
-    }
-    
-    .main-nav {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background-color: var(--light-color);
-        padding: 0;
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.5s ease, padding 0.3s ease;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        z-index: 101;
-        visibility: hidden; /* Hide by default */
-    }
-    
-    .main-nav.active {
-        max-height: 300px;
-        padding: 15px 0;
-        overflow-y: auto;
-        visibility: visible; /* Show when active */
-    }
-    
-    .main-nav ul {
-        flex-direction: column;
-        gap: 0;
-    }
-    
-    .main-nav ul li {
-        width: 100%;
-    }
-    
-    .main-nav ul li a {
-        display: block;
-        padding: 12px 5%;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    
-    .nav-link::after {
-        display: none;
-    }
-    
-    .nav-link:hover {
-        background-color: rgba(0, 0, 0, 0.03);
-    }
-}
-
-@media (max-width: 576px) {
-    .header {
-        padding: 12px 4%;
-    }
-    
-    .logo {
-        gap: 8px;
-    }
-    
-    .logo i {
-        font-size: 1.5rem;
-    }
-    
-    .header h1 {
-        font-size: 1.3rem;
-    }
-    
-    .main-nav.active {
-        max-height: 80vh; /* Limit height on very small screens */
-    }
 }
 
 /* Main container for content with responsive width */
@@ -501,14 +418,12 @@ ul {
     font-family: 'Montserrat', sans-serif;
 }
 
-/* Footer section with dark background */
 .footer {
     background-color: var(--footer-color);
     color: #fff;
     padding: 50px 0 20px;
 }
 
-/* Grid layout for footer content sections */
 .footer-content {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -577,41 +492,6 @@ ul {
     padding-top: 40px;
     color: #aaa;
     font-size: 14px;
-}
-
-/* Footer responsiveness */
-@media (max-width: 768px) {
-    .footer-content {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 30px;
-    }
-}
-
-@media (max-width: 576px) {
-    .footer-content {
-        grid-template-columns: 1fr;
-        gap: 25px;
-    }
-    
-    .footer {
-        padding: 40px 0 15px;
-    }
-    
-    .footer-section {
-        padding-bottom: 15px;
-    }
-    
-    .footer-section h3 {
-        margin-bottom: 15px;
-    }
-    
-    .social-links {
-        justify-content: center;
-    }
-    
-    .copyright {
-        padding-top: 30px;
-    }
 }
 
 /* Profile Page */
@@ -1899,6 +1779,88 @@ input[type="file"] {
     
     .chef-toggle {
         flex-direction: column;
+    }
+}
+
+@media (max-width: 576px) {
+    .header {
+        padding: 12px 4%;
+    }
+    
+    .logo {
+        gap: 8px;
+    }
+    
+    .logo i {
+        font-size: 1.5rem;
+    }
+    
+    .header h1 {
+        font-size: 1.3rem;
+    }
+    
+    .main-nav.active {
+        max-height: 80vh; /* Limit height on very small screens */
+    }
+}
+
+/* Responsive styles for the header and navigation */
+@media (max-width: 768px) {
+    .header {
+        padding: 15px 5%;
+    }
+    
+    .header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
+    .main-nav {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background-color: var(--light-color);
+        padding: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.5s ease, padding 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        z-index: 101;
+        visibility: hidden; /* Hide by default */
+    }
+    
+    .main-nav.active {
+        max-height: 300px;
+        padding: 15px 0;
+        overflow-y: auto;
+        visibility: visible; /* Show when active */
+    }
+    
+    .main-nav ul {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .main-nav ul li {
+        width: 100%;
+    }
+    
+    .main-nav ul li a {
+        display: block;
+        padding: 12px 5%;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .nav-link::after {
+        display: none;
+    }
+    
+    .nav-link:hover {
+        background-color: rgba(0, 0, 0, 0.03);
     }
 }
 

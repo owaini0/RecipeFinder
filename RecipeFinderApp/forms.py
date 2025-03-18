@@ -11,12 +11,33 @@ class UserRegistrationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2']
+        help_texts = {
+            'username': 'Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.',
+        }
+        error_messages = {
+            'username': {
+                'max_length': 'Username must be 150 characters or fewer.',
+                'required': 'Username is required.',
+                'unique': 'A user with that username already exists.',
+            },
+        }
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("This email is already in use. Please use a different email.")
+            raise forms.ValidationError("This email is already registered. Please use a different email or try logging in.")
         return email
+    
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if len(username) > 150:
+            raise forms.ValidationError("Username must be 150 characters or fewer.")
+        
+        # Check for existing user
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError("This username is already taken. Please choose another one.")
+            
+        return username
 
 class UserLoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}))

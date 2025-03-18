@@ -3,8 +3,40 @@
 
 {% block title %}Register - RecipeFinder{% endblock %}
 
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/register.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="auth-container">
+    <div class="auth-info">
+        <h3>Join RecipeFinder Today</h3>
+        <p>Create your account and discover a world of delicious recipes.</p>
+        
+        <div class="auth-features">
+            <div class="feature">
+                <i class="fas fa-heart"></i>
+                <span>Save your favorite recipes</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-upload"></i>
+                <span>Share your own creations</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-folder-plus"></i>
+                <span>Create personal collections</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-user-check"></i>
+                <span>Follow favorite chefs</span>
+            </div>
+            <div class="feature">
+                <i class="fas fa-comments"></i>
+                <span>Join the culinary community</span>
+            </div>
+        </div>
+    </div>
+    
     <div class="auth-form-container">
         <div class="auth-header">
             <h2>Create an Account</h2>
@@ -14,36 +46,70 @@
         <form method="post" class="auth-form" action="{% url 'register' %}" data-no-ajax="true" autocomplete="off" novalidate>
             {% csrf_token %}
             
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" name="username" id="username" class="form-control" required autocomplete="username" maxlength="150" {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
+                {% if form.username.errors %}
+                <div class="error-message">{{ form.username.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="first_name">First Name:</label>
+                <input type="text" name="first_name" id="first_name" class="form-control" required autocomplete="given-name" {% if form.first_name.value %}value="{{ form.first_name.value }}"{% endif %}>
+                {% if form.first_name.errors %}
+                <div class="error-message">{{ form.first_name.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="last_name">Last Name:</label>
+                <input type="text" name="last_name" id="last_name" class="form-control" required autocomplete="family-name" {% if form.last_name.value %}value="{{ form.last_name.value }}"{% endif %}>
+                {% if form.last_name.errors %}
+                <div class="error-message">{{ form.last_name.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" name="email" id="email" class="form-control" required autocomplete="email" {% if form.email.value %}value="{{ form.email.value }}"{% endif %}>
+                {% if form.email.errors %}
+                <div class="error-message">{{ form.email.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
             {% for field in form %}
+                {% if field.name == 'password1' or field.name == 'password2' %}
                 <div class="form-group">
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.help_text %}
-                        <small class="form-text text-muted">{{ field.help_text }}</small>
+                    <input type="password" name="{{ field.name }}" id="{{ field.id_for_label }}" class="form-control" required 
+                        {% if field.name == 'password1' %}autocomplete="new-password"{% else %}autocomplete="new-password"{% endif %}>
+                    
+                    {% if field.name == 'password1' %}
+                    <div class="password-strength">
+                        <div class="strength-meter">
+                            <div class="strength-meter-fill"></div>
+                        </div>
+                        <div class="strength-text">Password strength: <span>Type to check</span></div>
+                    </div>
                     {% endif %}
-                    {% for error in field.errors %}
-                        <div class="error-message">{{ error }}</div>
-                    {% endfor %}
+                    
+                    {% if field.help_text %}
+                        <small class="form-text text-muted" id="{{ field.id_for_label }}_helptext">{{ field.help_text|safe }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="error-message">{{ field.errors.0 }}</div>
+                    {% endif %}
                 </div>
+                {% endif %}
             {% endfor %}
             
-            <button type="submit" class="btn btn-primary">Sign Up</button>
+            <button type="submit" class="btn btn-primary" id="registerButton">Create Account</button>
         </form>
         
         <div class="auth-footer">
             <p>Already have an account? <a href="{% url 'login' %}">Log In</a></p>
         </div>
-    </div>
-    
-    <div class="auth-info">
-        <h3>Benefits of Joining</h3>
-        <ul class="benefits-list">
-            <li><i class="fas fa-heart"></i> Save your favorite recipes</li>
-            <li><i class="fas fa-upload"></i> Share your own recipes</li>
-            <li><i class="fas fa-comments"></i> Engage with the community</li>
-            <li><i class="fas fa-folder-plus"></i> Create collections</li>
-            <li><i class="fas fa-user-check"></i> Follow your favorite chefs</li>
-        </ul>
     </div>
 </div>
 
@@ -75,6 +141,98 @@ document.addEventListener('DOMContentLoaded', function() {
                 setRequestHeader: function() {}
             };
         };
+        
+        // Password strength checker
+        const passwordField = document.querySelector('input[name="password1"]');
+        const strengthMeter = document.querySelector('.strength-meter-fill');
+        const strengthText = document.querySelector('.strength-text span');
+        
+        if (passwordField && strengthMeter && strengthText) {
+            passwordField.addEventListener('input', function() {
+                const password = this.value;
+                let strength = 0;
+                
+                // Check password length
+                if (password.length >= 8) strength += 1;
+                
+                // Check for numbers
+                if (/\d/.test(password)) strength += 1;
+                
+                // Check for special characters
+                if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+                
+                // Check for uppercase and lowercase
+                if (/[A-Z]/.test(password) && /[a-z]/.test(password)) strength += 1;
+                
+                // Update strength meter
+                strengthMeter.className = 'strength-meter-fill';
+                if (password.length === 0) {
+                    strengthMeter.style.width = '0%';
+                    strengthText.textContent = 'Type to check';
+                } else if (strength < 2) {
+                    strengthMeter.classList.add('weak');
+                    strengthMeter.style.width = '30%';
+                    strengthText.textContent = 'Weak';
+                } else if (strength < 4) {
+                    strengthMeter.classList.add('medium');
+                    strengthMeter.style.width = '60%';
+                    strengthText.textContent = 'Medium';
+                } else {
+                    strengthMeter.classList.add('strong');
+                    strengthMeter.style.width = '100%';
+                    strengthText.textContent = 'Strong';
+                }
+            });
+        }
+        
+        // Prevent duplicate form submissions
+        let formSubmitted = false;
+        const submitButton = registerForm.querySelector('button[type="submit"]');
+        
+        registerForm.addEventListener('submit', function(event) {
+            if (formSubmitted) {
+                event.preventDefault();
+                console.log('Preventing duplicate form submission');
+                return false;
+            }
+            
+            // Check for password matching
+            const password1 = registerForm.querySelector('input[name="password1"]').value;
+            const password2 = registerForm.querySelector('input[name="password2"]').value;
+            
+            if (password1 !== password2) {
+                event.preventDefault();
+                // Create or update error message
+                let errorElem = registerForm.querySelector('.password-mismatch-error');
+                if (!errorElem) {
+                    errorElem = document.createElement('div');
+                    errorElem.className = 'error-message password-mismatch-error';
+                    errorElem.textContent = 'Passwords do not match';
+                    registerForm.querySelector('input[name="password2"]').parentNode.appendChild(errorElem);
+                }
+                return false;
+            }
+            
+            // Add form submitted indicator and loading state
+            formSubmitted = true;
+            
+            if (submitButton) {
+                const originalText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+                
+                // If user navigates away, reset the form after 10 seconds
+                setTimeout(() => {
+                    formSubmitted = false;
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                    }
+                }, 10000);
+            }
+            
+            return true;
+        });
     }
 });
 </script>

@@ -1,4 +1,4 @@
-/* Login Page Specific Styles */
+/* Register page specific styles */
 .auth-container {
     display: flex;
     gap: 40px;
@@ -17,7 +17,7 @@
     transition: all 0.3s ease;
     border: 1px solid rgba(202, 161, 136, 0.1);
     animation: fadeIn 0.6s ease-out;
-    order: -1; /* Make login form appear first on desktop */
+    order: -1; /* Make register form appear first on desktop */
 }
 
 .auth-form-container:hover {
@@ -38,6 +38,7 @@
     position: relative;
     overflow: hidden;
 }
+
 .auth-header {
     text-align: center;
     margin-bottom: 30px;
@@ -161,63 +162,32 @@
     text-decoration: underline;
 }
 
-/* Custom remember me checkbox styling */
-.auth-form .remember-me {
+/* Error messages */
+.error-message {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    margin-top: 5px;
+    font-weight: 500;
     display: flex;
     align-items: center;
-    margin: 20px 0;
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    position: relative;
-    padding-left: 35px;
-    font-weight: 500;
-    color: #555;
 }
 
-.auth-form .remember-me input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
-    width: auto;
+.error-message::before {
+    content: '!';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    margin-right: 6px;
+    font-size: 12px;
+    font-weight: bold;
 }
 
-.auth-form .remember-me input[type="checkbox"] + span {
-    position: absolute;
-    left: 0;
-    top: -2px;
-    width: 24px;
-    height: 24px;
-    background: #f5f5f5;
-    border: 2px solid #ddd;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-}
-
-.auth-form .remember-me:hover input[type="checkbox"] + span {
-    border-color: var(--primary-color);
-    background: #f8f2ef;
-}
-
-.auth-form .remember-me input[type="checkbox"]:checked + span {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.auth-form .remember-me input[type="checkbox"]:checked + span:after {
-    content: '';
-    position: absolute;
-    left: 8px;
-    top: 4px;
-    width: 6px;
-    height: 12px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-}
-
-/* Animation */
+/* Animations */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -227,6 +197,74 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Terms and conditions checkbox */
+.terms-checkbox {
+    display: flex;
+    align-items: flex-start;
+    margin: 20px 0;
+}
+
+.terms-checkbox input {
+    width: auto;
+    margin-right: 10px;
+    margin-top: 4px;
+}
+
+.terms-checkbox label {
+    margin-bottom: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.terms-checkbox a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.terms-checkbox a:hover {
+    text-decoration: underline;
+}
+
+/* Password strength meter */
+.password-strength {
+    margin-top: 8px;
+}
+
+.strength-meter {
+    height: 6px;
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.strength-meter-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strength-meter-fill.weak {
+    background-color: #e74c3c;
+    width: 30%;
+}
+
+.strength-meter-fill.medium {
+    background-color: #f39c12;
+    width: 60%;
+}
+
+.strength-meter-fill.strong {
+    background-color: #2ecc71;
+    width: 100%;
+}
+
+.strength-text {
+    font-size: 0.8rem;
+    color: #777;
 }
 
 /* Responsive styles */
@@ -283,6 +321,10 @@
     .auth-features .feature span {
         font-size: 1rem;
     }
+    
+    .terms-checkbox label {
+        font-size: 0.9rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -309,4 +351,4 @@
     .auth-form label {
         font-size: 0.95rem;
     }
-}
+} 
