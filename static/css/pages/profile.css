@@ -1,3 +1,12 @@
+/* 
+ * Note: Common hover styles have been moved to components.css
+ * to avoid duplication. This includes:
+ * - Card hover effects 
+ * - Button hover styles
+ * - Image zoom hover effects
+ * - Link hover colors
+ */
+
 /* Profile Page Styles */
 
 .profile-container {
@@ -123,17 +132,8 @@
     color: white;
 }
 
-.follow-btn:hover {
-    background-color: var(--primary-color-dark);
-    transform: translateY(-2px);
-}
-
 .follow-btn.following {
     background-color: #e74c3c;
-}
-
-.follow-btn.following:hover {
-    background-color: #c0392b;
 }
 
 .edit-profile-btn {
@@ -142,21 +142,11 @@
     border: 1px solid #ddd;
 }
 
-.edit-profile-btn:hover {
-    background-color: #eee;
-    transform: translateY(-2px);
-}
-
 .verify-chef-btn {
     background: linear-gradient(135deg, #4CAF50, #8BC34A);
     color: white;
     margin-left: 15px;
     box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
-}
-
-.verify-chef-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(76, 175, 80, 0.4);
 }
 
 .profile-bio {
@@ -177,10 +167,6 @@
 .profile-meta a {
     color: var(--primary-color);
     text-decoration: none;
-}
-
-.profile-meta a:hover {
-    text-decoration: underline;
 }
 
 /* Profile Content */
@@ -249,11 +235,6 @@
     transition: all 0.3s ease;
 }
 
-.recipe-card:hover, .collection-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-}
-
 .recipe-image, .collection-cover {
     height: 200px;
     position: relative;
@@ -265,11 +246,6 @@
     height: 100%;
     object-fit: cover;
     transition: transform 0.5s ease;
-}
-
-.recipe-card:hover .recipe-image img,
-.collection-card:hover .collection-cover img {
-    transform: scale(1.1);
 }
 
 .recipe-badge, .collection-count {
@@ -284,10 +260,6 @@
     color: white;
 }
 
-.difficulty-badge {
-    display: inline-block;
-}
-
 .recipe-info, .collection-info {
     padding: 20px;
 }
@@ -300,10 +272,6 @@
 .recipe-info h3 a, .collection-info h3 a {
     color: #333;
     text-decoration: none;
-}
-
-.recipe-info h3 a:hover, .collection-info h3 a:hover {
-    color: var(--primary-color);
 }
 
 .recipe-meta {
@@ -382,11 +350,6 @@
     transition: all 0.3s ease;
 }
 
-.no-content .btn:hover {
-    background-color: var(--primary-color-dark);
-    transform: translateY(-2px);
-}
-
 .form-group {
     display: flex;
     flex-direction: column;
@@ -429,11 +392,6 @@
     position: relative;
     z-index: 1;
     overflow: visible;
-}
-
-.certificate-upload:hover {
-    border-color: var(--primary-color);
-    background-color: #f9f9f9;
 }
 
 .certificate-upload i {
@@ -506,18 +464,9 @@
     color: #555;
 }
 
-.btn-cancel:hover {
-    background-color: #eee;
-}
-
 .btn-submit {
     background-color: var(--primary-color);
     color: white;
-}
-
-.btn-submit:hover {
-    background-color: var(--primary-color-dark);
-    transform: translateY(-2px);
 }
 
 /* Responsive styles */
@@ -603,10 +552,6 @@
     border: none;
     padding: 0;
     line-height: 1;
-}
-
-.verification-modal-close:hover {
-    color: #333;
 }
 
 .verification-modal-header {

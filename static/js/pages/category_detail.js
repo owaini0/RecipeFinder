@@ -46,7 +46,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(style);
     }
     
-    // Back button hover effect
     const backButton = document.querySelector('.back-to-categories .btn');
     if (backButton) {
         backButton.addEventListener('mouseenter', function() {

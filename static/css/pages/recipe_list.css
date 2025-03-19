@@ -22,7 +22,6 @@
     font-size: 1.1rem;
 }
 
-/* Recipes Grid */
 .recipes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -40,12 +39,6 @@
     transform: translateY(20px);
 }
 
-.recipe-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
-}
-
-/* No recipes found */
 .no-recipes {
     text-align: center;
     padding: 60px 40px;
@@ -78,7 +71,6 @@
     line-height: 1.6;
 }
 
-/* Create Recipe CTA */
 .create-recipe-cta {
     background: var(--light-color);
     border-radius: 15px;
@@ -89,11 +81,6 @@
     transition: all 0.3s ease;
     opacity: 0;
     transform: translateY(20px);
-}
-
-.create-recipe-cta:hover {
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
-    transform: translateY(-3px);
 }
 
 .cta-content {
@@ -120,18 +107,6 @@
     transition: all 0.3s ease;
 }
 
-.create-recipe-cta .btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.btn-primary:hover {
-    background-color: var(--primary-color);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-/* Pagination */
 .pagination {
     justify-content: center !important;
     text-align: center;
@@ -154,17 +129,11 @@
     transition: all 0.2s ease;
 }
 
-.pagination a:hover {
-    background-color: rgba(52, 152, 219, 0.1);
-    border-radius: 5px;
-}
-
 .pagination .current {
     padding: 5px 10px;
     color: #666;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
     .recipes-grid {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -200,7 +169,6 @@
     }
 }
 
-/* Filter Section */
 .recipe-filter-section {
     background: var(--light-color);
     border-radius: 15px;
@@ -215,7 +183,6 @@
     gap: 20px;
 }
 
-/* Search Bar */
 .search-bar {
     display: flex;
     border-radius: 30px;
@@ -247,11 +214,6 @@
     transition: all 0.2s ease;
 }
 
-.search-button:hover {
-    color: black;
-}
-
-/* Filters */
 .filters {
     display: flex;
     flex-wrap: wrap;
@@ -290,13 +252,7 @@
     outline: none;
 }
 
-/* Additional styling for number inputs */
-.filter-group input[type="number"] {
-    appearance: textfield; /* Standard */
-    -moz-appearance: textfield; /* Firefox */
-}
 
-/* Remove spinner buttons in Chrome, Safari, Edge, Opera */
 .filter-group input[type="number"]::-webkit-outer-spin-button,
 .filter-group input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -314,11 +270,6 @@
     transition: all 0.2s ease;
 }
 
-.filter-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
 .reset-button {
     background-color: hsl(210, 17%, 98%);
     color: #666;
@@ -333,12 +284,6 @@
     font-size: 0.9rem;
 }
 
-.reset-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-/* Category Chips */
 .category-chips {
     display: flex;
     flex-wrap: wrap;
@@ -359,14 +304,6 @@
     border: 1px solid rgba(230, 230, 240, 0.8);
     opacity: 0;
     transform: translateY(10px);
-}
-
-.category-chip:hover {
-    background-color: var(--primary-color);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    border-color: var(--primary-color);
 }
 
 .filter-group.active label {

@@ -112,7 +112,6 @@ ul {
 
 .mobile-menu-toggle:hover {
     color: var(--primary-color);
-    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .mobile-menu-toggle:focus {
@@ -263,8 +262,7 @@ ul {
 }
 
 .find-recipe:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(224, 122, 95, 0.35);
+    background-color: var(--primary-color);
 }
 
 .find-recipe a {
@@ -347,10 +345,6 @@ ul {
     z-index: 2;
 }
 
-.image-box:hover .centered-image {
-    transform: scale(1.05);
-}
-
 .features {
     padding: 60px 0;
     background-color: var(--light-color);
@@ -392,8 +386,7 @@ ul {
 }
 
 .feature-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px);
 }
 
 .feature-icon {
@@ -483,7 +476,6 @@ ul {
 }
 
 .social-links a:hover {
-    background-color: var(--primary-color);
     transform: translateY(-3px);
 }
 
@@ -623,7 +615,8 @@ ul {
 }
 
 .follow-btn:hover, .edit-profile-btn:hover {
-    transform: translateY(-2px);
+    background-color: var(--primary-color);
+    color: white;
 }
 
 .profile-bio {
@@ -831,8 +824,7 @@ ul {
 }
 
 .auth-form .btn-primary:hover {
-    background-color: var(--accent-color);
-    transform: translateY(-2px);
+    background-color: var(--primary-color);
 }
 
 .auth-footer {
@@ -912,9 +904,7 @@ ul {
 }
 
 .category-label:hover {
-    border-color: var(--primary-color);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .category-checkbox:checked + .category-label {
@@ -1045,8 +1035,8 @@ ul {
 }
 
 .category-chip:hover {
-    background: var(--primary-color);
-    transform: translateY(-2px);
+    background-color: var(--primary-color);
+    color: white;
 }
 
 /* Recipe Cards */
@@ -1096,7 +1086,6 @@ ul {
 }
 
 .difficulty-badge {
-    background-color: #333;
     color: white;
     padding: 3px 8px;
     border-radius: 12px;
@@ -1136,7 +1125,7 @@ ul {
 }
 
 .recipe-meta a {
-    color: #666;
+    color: var(--text-color);
     text-decoration: none;
     transition: color 0.3s ease;
 }
@@ -1146,15 +1135,15 @@ ul {
 }
 
 .recipe-meta .like-recipe-link:hover {
-    color: #dc3545;
+    color: #e74c3c;
 }
 
 .recipe-meta .like-recipe-link .fas.fa-heart {
-    color: #dc3545;
+    color: #e74c3c;
 }
 
 .recipe-meta .like-recipe-link:hover .far.fa-heart {
-    color: #dc3545;
+    color: #e74c3c;
 }
 
 .recipe-excerpt {
@@ -1324,8 +1313,7 @@ ul {
 }
 
 .btn-primary:hover {
-    background-color: var(--accent-color);
-    transform: translateY(-2px);
+    background-color: var(--primary-color);
 }
 
 .btn-outline {
@@ -1335,7 +1323,7 @@ ul {
 }
 
 .btn:hover {
-    transform: translateY(-2px);
+    opacity: 0.9;
 }
 
 /* Enhanced Recipe Form Styling */
@@ -1532,7 +1520,7 @@ ul {
 }
 
 .empty-avatar:hover {
-    background-color: #f0f0f0;
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .empty-avatar i {
@@ -1582,8 +1570,7 @@ ul {
 }
 
 .remove-pic-btn:hover:not([disabled]) {
-    border-color: #f44;
-    color: #f44;
+    background-color: #e74c3c;
 }
 
 .remove-pic-btn[disabled] {
@@ -1652,9 +1639,7 @@ ul {
 }
 
 .save-profile-btn:hover {
-    background-color: var(--accent-color);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    background-color: var(--primary-color);
 }
 
 .cancel-btn {
@@ -1671,12 +1656,6 @@ ul {
     display: flex;
     align-items: center;
     gap: 8px;
-}
-
-.cancel-btn:hover {
-    border-color: #999;
-    color: #444;
-    transform: translateY(-2px);
 }
 
 .profile-edit-sidebar {
@@ -1727,7 +1706,6 @@ ul {
     margin-top: 2px;
 }
 
-/* File Upload Styling */
 input[type="file"] {
     width: 0.1px;
     height: 0.1px;
@@ -1751,12 +1729,6 @@ input[type="file"] {
     transition: all 0.3s ease;
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.custom-file-upload:hover {
-    background-color: var(--accent-color);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .custom-file-upload i {

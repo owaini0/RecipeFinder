@@ -314,6 +314,12 @@ def recipe_detail(request, slug):
                 
                 # Check if it's an AJAX request
                 is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'username': request.user.username,
+                        'content': new_comment.content
+                    })
         else:
             # Regular form submission
             comment_form = CommentForm(request.POST)
