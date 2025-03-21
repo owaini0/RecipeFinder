@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Form state management
-    const STORAGE_KEY = 'recipe_form_state';
+    // Remove form state management code that used localStorage
     
     // Helper function to check if Select2 is initialized on an element
     function isSelect2Initialized(element) {
@@ -18,29 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('Error getting Select2 data:', e);
             return [];
         }
-    }
-    
-    // Save form state
-    function saveFormState() {
-        const currentStep = getCurrentStep();
-        
-        // Get all form data
-        const formData = {
-            step: currentStep,
-            title: document.getElementById('id_title')?.value || '',
-            description: document.getElementById('id_description')?.value || '',
-            cooking_time: document.getElementById('id_cooking_time')?.value || '',
-            prep_time: document.getElementById('id_prep_time')?.value || '',
-            servings: document.getElementById('id_servings')?.value || '',
-            difficulty: document.getElementById('id_difficulty')?.value || '',
-            categories: getSelect2Data('#id_categories'),
-            ingredients: getIngredientValues(),
-            instructions: getInstructionValues(),
-            notes: document.getElementById('id_notes')?.value || ''
-        };
-        
-        // Save to localStorage
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
     }
     
     // Get current step index
@@ -74,131 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return instructions;
     }
     
-    // Restore form state from localStorage
-    function restoreFormState() {
-        const savedState = localStorage.getItem(STORAGE_KEY);
-        if (!savedState) return false;
-        
-        try {
-            const formData = JSON.parse(savedState);
-            
-            // Restore input values
-            if (document.getElementById('id_title')) document.getElementById('id_title').value = formData.title || '';
-            if (document.getElementById('id_description')) document.getElementById('id_description').value = formData.description || '';
-            if (document.getElementById('id_cooking_time')) document.getElementById('id_cooking_time').value = formData.cooking_time || '';
-            if (document.getElementById('id_prep_time')) document.getElementById('id_prep_time').value = formData.prep_time || '';
-            if (document.getElementById('id_servings')) document.getElementById('id_servings').value = formData.servings || '';
-            if (document.getElementById('id_difficulty')) document.getElementById('id_difficulty').value = formData.difficulty || '';
-            if (document.getElementById('id_notes')) document.getElementById('id_notes').value = formData.notes || '';
-            
-            // Update character counters
-            if (titleChars) titleChars.textContent = formData.title?.length || 0;
-            if (descriptionChars) descriptionChars.textContent = formData.description?.length || 0;
-            
-            // Restore categories (for Select2) after ensuring it's initialized
-            if (formData.categories && formData.categories.length > 0) {
-                // Wait a bit to ensure Select2 is initialized
-                setTimeout(() => {
-                    try {
-                        const categorySelect = $('#id_categories');
-                        
-                        // Only proceed if Select2 is initialized
-                        if (isSelect2Initialized(categorySelect)) {
-                            // Clear existing options first
-                            categorySelect.empty();
-                            
-                            // Add the saved options
-                            formData.categories.forEach(category => {
-                                if (category && category.id && category.text) {
-                                    const option = new Option(category.text, category.id, true, true);
-                                    categorySelect.append(option);
-                                }
-                            });
-                            categorySelect.trigger('change');
-                        }
-                    } catch (e) {
-                        console.warn('Error restoring Select2 data:', e);
-                    }
-                }, 500); // Increased timeout to ensure Select2 is ready
-            }
-            
-            // Restore ingredients
-            if (formData.ingredients && formData.ingredients.length > 0) {
-                // Clear existing ingredients
-                document.querySelector('.ingredients-list').innerHTML = '';
-                
-                // Add each ingredient
-                formData.ingredients.forEach(ingredient => {
-                    const newItem = document.createElement('div');
-                    newItem.className = 'ingredient-item';
-                    newItem.innerHTML = `
-                        <input type="text" class="ingredient-input" placeholder="e.g. 2 cups flour" value="${ingredient}">
-                        <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-                    `;
-                    document.querySelector('.ingredients-list').appendChild(newItem);
-                    
-                    // Add event listeners
-                    const input = newItem.querySelector('.ingredient-input');
-                    input.addEventListener('input', updateIngredientsField);
-                    
-                    const removeBtn = newItem.querySelector('.remove-item-btn');
-                    removeBtn.addEventListener('click', function() {
-                        newItem.remove();
-                        updateIngredientsField();
-                        saveFormState();
-                    });
-                });
-                updateIngredientsField();
-            }
-            
-            // Restore instructions
-            if (formData.instructions && formData.instructions.length > 0) {
-                // Clear existing instructions
-                document.querySelector('.instructions-list').innerHTML = '';
-                
-                // Add each instruction
-                formData.instructions.forEach((instruction, index) => {
-                    const newItem = document.createElement('div');
-                    newItem.className = 'instruction-item';
-                    newItem.innerHTML = `
-                        <span class="step-number">${index + 1}</span>
-                        <textarea class="instruction-input" placeholder="Describe this step...">${instruction}</textarea>
-                        <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-                    `;
-                    document.querySelector('.instructions-list').appendChild(newItem);
-                    
-                    // Add event listeners
-                    const textarea = newItem.querySelector('.instruction-input');
-                    textarea.addEventListener('input', updateInstructionsField);
-                    
-                    const removeBtn = newItem.querySelector('.remove-item-btn');
-                    removeBtn.addEventListener('click', function() {
-                        newItem.remove();
-                        updateInstructionsField();
-                        saveFormState();
-                    });
-                });
-                updateInstructionsField();
-            }
-            
-            // Go to saved step
-            if (typeof formData.step === 'number' && formData.step >= 0) {
-                showStep(formData.step);
-                return true;
-            }
-            
-            return true;
-        } catch (e) {
-            console.error('Error restoring form state:', e);
-            return false;
-        }
-    }
-    
-    // Clear saved form state
-    function clearFormState() {
-        localStorage.removeItem(STORAGE_KEY);
-    }
-    
     // Character counters
     const titleInput = document.getElementById('id_title');
     const descriptionInput = document.getElementById('id_description');
@@ -208,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (titleInput && titleChars) {
         titleInput.addEventListener('input', function() {
             titleChars.textContent = this.value.length;
-            saveFormState();
         });
         // Initialize counter
         titleChars.textContent = titleInput.value.length;
@@ -217,16 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (descriptionInput && descriptionChars) {
         descriptionInput.addEventListener('input', function() {
             descriptionChars.textContent = this.value.length;
-            saveFormState();
         });
         // Initialize counter
         descriptionChars.textContent = descriptionInput.value.length;
     }
-    
-    // Track changes on all form inputs
-    document.querySelectorAll('#recipe-form input, #recipe-form textarea, #recipe-form select').forEach(input => {
-        input.addEventListener('change', saveFormState);
-    });
     
     // Multi-step form navigation
     const formSteps = document.querySelectorAll('.form-step');
@@ -253,10 +97,6 @@ document.addEventListener('DOMContentLoaded', function() {
             top: document.querySelector('.recipe-form-container').offsetTop - 20,
             behavior: 'smooth'
         });
-        
-        // Save the current step
-        // Delay saving form state to ensure Select2 is fully initialized
-        setTimeout(saveFormState, 100);
     }
     
     // Next button click handler
@@ -393,6 +233,12 @@ document.addEventListener('DOMContentLoaded', function() {
             updateInstructionsField();
         }
         
+        // Images validation - explicitly make it optional
+        if (stepIndex === 2) {
+            // No validation required - images are optional
+            return true;
+        }
+        
         return true;
     }
     
@@ -413,13 +259,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Wait for possible Select2 initialization before attempting to restore form
-    setTimeout(function() {
-        // Try to restore form state first, if not, initialize form to first step
-        if (!restoreFormState()) {
-            showStep(0);
-        }
-    }, 300);
+    // Initialize to first step
+    showStep(0);
     
     // Dynamic ingredient fields
     const ingredientsList = document.querySelector('.ingredients-list');
@@ -452,7 +293,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const newInput = newItem.querySelector('.ingredient-input');
             newInput.addEventListener('input', function() {
                 updateIngredientsField();
-                saveFormState();
             });
             
             // Focus the new input
@@ -463,18 +303,13 @@ document.addEventListener('DOMContentLoaded', function() {
             removeBtn.addEventListener('click', function() {
                 newItem.remove();
                 updateIngredientsField();
-                saveFormState();
             });
-            
-            // Save state after adding new item
-            saveFormState();
         });
         
         // Add event listeners to existing ingredient inputs
         document.querySelectorAll('.ingredient-input').forEach(input => {
             input.addEventListener('input', function() {
                 updateIngredientsField();
-                saveFormState();
             });
         });
         
@@ -483,13 +318,12 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function() {
                 this.closest('.ingredient-item').remove();
                 updateIngredientsField();
-                saveFormState();
             });
         });
         
         // Initialize from existing ingredients if present
         const ingredientsField = document.getElementById('id_ingredients');
-        if (ingredientsField && ingredientsField.value && !localStorage.getItem(STORAGE_KEY)) {
+        if (ingredientsField && ingredientsField.value) {
             // Clear any existing ingredient items
             ingredientsList.innerHTML = '';
             
@@ -509,7 +343,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const input = newItem.querySelector('.ingredient-input');
                     input.addEventListener('input', function() {
                         updateIngredientsField();
-                        saveFormState();
                     });
                     
                     // Add event listener to remove button
@@ -517,7 +350,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     removeBtn.addEventListener('click', function() {
                         newItem.remove();
                         updateIngredientsField();
-                        saveFormState();
                     });
                 }
             });
@@ -565,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const newTextarea = newItem.querySelector('.instruction-input');
             newTextarea.addEventListener('input', function() {
                 updateInstructionsField();
-                saveFormState();
             });
             
             // Focus the new textarea
@@ -576,18 +407,13 @@ document.addEventListener('DOMContentLoaded', function() {
             removeBtn.addEventListener('click', function() {
                 newItem.remove();
                 updateInstructionsField();
-                saveFormState();
             });
-            
-            // Save state after adding new item
-            saveFormState();
         });
         
         // Add event listeners to existing instruction textareas
         document.querySelectorAll('.instruction-input').forEach(textarea => {
             textarea.addEventListener('input', function() {
                 updateInstructionsField();
-                saveFormState();
             });
         });
         
@@ -596,13 +422,12 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function() {
                 this.closest('.instruction-item').remove();
                 updateInstructionsField();
-                saveFormState();
             });
         });
         
         // Initialize from existing instructions if present
         const instructionsField = document.getElementById('id_instructions');
-        if (instructionsField && instructionsField.value && !localStorage.getItem(STORAGE_KEY)) {
+        if (instructionsField && instructionsField.value) {
             // Clear any existing instruction items
             instructionsList.innerHTML = '';
             
@@ -623,7 +448,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const textarea = newItem.querySelector('.instruction-input');
                     textarea.addEventListener('input', function() {
                         updateInstructionsField();
-                        saveFormState();
                     });
                     
                     // Add event listener to remove button
@@ -631,7 +455,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     removeBtn.addEventListener('click', function() {
                         newItem.remove();
                         updateInstructionsField();
-                        saveFormState();
                     });
                 }
             });
@@ -792,7 +615,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const recipeForm = document.getElementById('recipe-form');
     
     if (recipeForm) {
-        recipeForm.addEventListener('submit', function(e) {
+        recipeForm.addEventListener('submit', async function(e) {
+            e.preventDefault(); // Prevent form submission initially
+            
             // Update hidden fields
             updateIngredientsField();
             updateInstructionsField();
@@ -806,6 +631,61 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (isSelect2Initialized(categorySelect)) {
                     const selectedCategories = categorySelect.select2('data');
                     categorySelected = selectedCategories && selectedCategories.length > 0;
+                    
+                    // Check for new categories that need to be created
+                    const newCategories = selectedCategories.filter(cat => cat.id && cat.id.toString().startsWith('new:'));
+                    
+                    // If there are new categories, create them first
+                    if (newCategories.length > 0) {
+                        showLoader('Creating new categories...');
+                        
+                        // Process new categories one by one
+                        for (const newCat of newCategories) {
+                            const categoryName = newCat.text.replace(' (New)', '');
+                            
+                            try {
+                                // Create the category via API
+                                const formData = new FormData();
+                                formData.append('name', categoryName);
+                                
+                                const response = await fetch('/api/categories/create/', {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'X-CSRFToken': getCsrfToken()
+                                    }
+                                });
+                                
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    
+                                    if (data.success) {
+                                        // Replace the temporary ID with the real one
+                                        const index = selectedCategories.findIndex(cat => cat.id === newCat.id);
+                                        if (index !== -1) {
+                                            // Remove the temporary option
+                                            categorySelect.find(`option[value="${newCat.id}"]`).remove();
+                                            
+                                            // Add the new option with the real ID
+                                            const newOption = new Option(data.category.name, data.category.id, true, true);
+                                            categorySelect.append(newOption);
+                                        }
+                                    } else {
+                                        throw new Error(data.error || 'Failed to create category');
+                                    }
+                                } else {
+                                    throw new Error('Server error creating category');
+                                }
+                            } catch (err) {
+                                console.error('Error creating category:', err);
+                                hideLoader();
+                                showError(`Error creating category "${categoryName}": ${err.message}`);
+                                return false;
+                            }
+                        }
+                        
+                        hideLoader();
+                    }
                 } else {
                     // If Select2 not initialized, check the regular select
                     console.log('Select2 not initialized, checking regular select');
@@ -820,7 +700,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (!categorySelected) {
-                e.preventDefault();
                 showError('Please select at least one category');
                 showStep(0); // Go back to first step where categories are
                 return false;
@@ -829,53 +708,65 @@ document.addEventListener('DOMContentLoaded', function() {
             // Validate final step if we're on it
             const visibleStep = Array.from(formSteps).findIndex(step => 
                 step.style.display === 'block' || step.style.display === '');
-            
-            if (visibleStep === 2) {
-                const imageInput = document.getElementById('id_image');
                 
-                // Check if we're editing and already have images or if a new image is selected
-                const isEditing = window.location.pathname.includes('edit');
-                const hasExistingImages = document.querySelector('.current-images')?.querySelector('.image-item');
-                
-                if (!isEditing || !hasExistingImages) {
-                    if (!imageInput.files || !imageInput.files[0]) {
-                        e.preventDefault();
-                        showError('Please upload at least one image for your recipe');
-                        return false;
-                    }
-                    
-                    // Additional validation for the selected image
-                    const file = imageInput.files[0];
-                    
-                    // Validate file type
-                    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
-                    if (!validImageTypes.includes(file.type)) {
-                        e.preventDefault();
-                        showError(`Invalid file type. Please upload a valid image (JPEG, PNG, GIF, WebP or BMP). You uploaded: ${file.type}`);
-                        return false;
-                    }
-                    
-                    // Validate file size (max 10MB)
-                    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-                    if (file.size > maxSize) {
-                        e.preventDefault();
-                        showError(`Image is too large. Maximum size is 10MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
-                        return false;
-                    }
-                }
+            if (visibleStep === formSteps.length - 1 && !validateStep(visibleStep)) {
+                return false;
             }
             
-            // If we get here, form is valid, clear saved state
-            clearFormState();
+            // If everything is valid, submit the form
+            this.submit();
         });
     }
     
+    // Helper function to get CSRF token
+    function getCsrfToken() {
+        return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    }
+    
+    // Helper functions for loader
+    function showLoader(message) {
+        // Create loader if it doesn't exist
+        let loader = document.getElementById('form-loader');
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.id = 'form-loader';
+            loader.className = 'form-loader';
+            
+            const spinnerContainer = document.createElement('div');
+            spinnerContainer.className = 'loader-spinner';
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner';
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = 'loader-message';
+            
+            spinnerContainer.appendChild(spinner);
+            loader.appendChild(spinnerContainer);
+            loader.appendChild(messageEl);
+            
+            document.body.appendChild(loader);
+        }
+        
+        // Update message and show loader
+        const messageEl = loader.querySelector('.loader-message');
+        messageEl.textContent = message || 'Processing...';
+        loader.style.display = 'flex';
+    }
+    
+    function hideLoader() {
+        const loader = document.getElementById('form-loader');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+    }
+    
     // Add initial ingredient and instruction items if needed
-    if (ingredientsList && !ingredientsList.querySelector('.ingredient-item') && !localStorage.getItem(STORAGE_KEY)) {
+    if (ingredientsList && !ingredientsList.querySelector('.ingredient-item')) {
         addIngredientBtn.click();
     }
     
-    if (instructionsList && !instructionsList.querySelector('.instruction-item') && !localStorage.getItem(STORAGE_KEY)) {
+    if (instructionsList && !instructionsList.querySelector('.instruction-item')) {
         addInstructionBtn.click();
     }
 }); 

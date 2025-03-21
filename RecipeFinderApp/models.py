@@ -10,8 +10,8 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
-    is_chef = models.BooleanField(default=False)  # Indicates if the user identifies as a chef
-    chef_verified = models.BooleanField(default=False)  # Verified status after approval
+    is_chef = models.BooleanField(default=False)  # User identifies as a chef
+    chef_verified = models.BooleanField(default=False)  # Verified chef status
     website = models.URLField(blank=True, null=True)
     location = models.CharField(max_length=100, blank=True, null=True)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -25,7 +25,7 @@ class UserProfile(models.Model):
         return f"{self.user.first_name} {self.user.last_name}"
     
     def get_absolute_url(self):
-        return reverse('profile', kwargs={'username': self.user.username})
+        return reverse('profile_with_username', kwargs={'username': self.user.username})
 
 # Signal handler to automatically create a profile when a user is created
 @receiver(post_save, sender=User)

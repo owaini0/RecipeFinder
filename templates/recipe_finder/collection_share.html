@@ -3,7 +3,7 @@
 
 {% block title %}Share {{ collection.name }} - RecipeFinder{% endblock %}
 
-{% block page_css %}
+{% block main_styles %}
 <link rel="stylesheet" href="{% static 'css/pages/collection_share.css' %}">
 <style>
     .share-container {
@@ -40,11 +40,6 @@
         border-radius: 10px;
         background-color: #f8f9fa;
         transition: all 0.2s ease;
-    }
-    
-    .share-option:hover {
-        background-color: #eaecef;
-        transform: translateY(-2px);
     }
     
     .share-icon {
@@ -100,10 +95,6 @@
         transition: all 0.2s ease;
     }
     
-    .copy-btn:hover {
-        background-color: var(--primary-color-dark);
-    }
-    
     .copy-feedback {
         position: absolute;
         bottom: -25px;
@@ -115,50 +106,9 @@
         display: none;
     }
     
-    .social-icons {
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-        margin-top: 30px;
-    }
-    
-    .social-icon {
-        width: 50px;
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        color: white;
-        font-size: 22px;
-        transition: all 0.2s ease;
-        text-decoration: none;
-    }
-    
-    .social-icon:hover {
-        transform: translateY(-5px);
-    }
-    
-    .twitter {
-        background-color: #1DA1F2;
-    }
-    
-    .facebook {
-        background-color: #4267B2;
-    }
-    
-    .whatsapp {
-        background-color: #25D366;
-    }
-    
-    .telegram {
-        background-color: #0088cc;
-    }
-    
-    .email {
-        background-color: #BB001B;
-    }
-    
+
+
+
     .actions {
         display: flex;
         justify-content: center;
@@ -175,57 +125,27 @@
         const copyFeedback = document.getElementById('copy-feedback');
         
         copyButton.addEventListener('click', function() {
-            // Create a temporary input element
             const tempInput = document.createElement('input');
             tempInput.value = shareUrl.textContent;
             document.body.appendChild(tempInput);
             
-            // Select the text and copy it
             tempInput.select();
             document.execCommand('copy');
             
-            // Remove the temporary element
             document.body.removeChild(tempInput);
             
-            // Show feedback
             copyFeedback.style.display = 'block';
             setTimeout(function() {
                 copyFeedback.style.display = 'none';
             }, 2000);
         });
-        
-        // Social sharing functions
+
         document.querySelectorAll('.social-icon').forEach(function(icon) {
             icon.addEventListener('click', function(e) {
                 e.preventDefault();
                 
                 const url = encodeURIComponent(shareUrl.textContent);
                 const title = encodeURIComponent('Check out this recipe collection: {{ collection.name }}');
-                
-                let shareWindow;
-                const type = this.getAttribute('data-type');
-                
-                switch(type) {
-                    case 'twitter':
-                        shareWindow = window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, '_blank');
-                        break;
-                    case 'facebook':
-                        shareWindow = window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
-                        break;
-                    case 'whatsapp':
-                        shareWindow = window.open(`https://wa.me/?text=${title}%20${url}`, '_blank');
-                        break;
-                    case 'telegram':
-                        shareWindow = window.open(`https://t.me/share/url?url=${url}&text=${title}`, '_blank');
-                        break;
-                    case 'email':
-                        window.location.href = `mailto:?subject=${title}&body=Check out this recipe collection: ${url}`;
-                        break;
-                }
-                
-                if (shareWindow) {
-                    shareWindow.focus();
-                }
             });
         });
     });
@@ -256,34 +176,6 @@
                 </div>
             </div>
         </div>
-        
-        <div class="share-option">
-            <div class="share-icon" style="background-color: #8e44ad;">
-                <i class="fas fa-share-alt"></i>
-            </div>
-            <div class="share-content">
-                <h3>Share on Social Media</h3>
-                <p>Share your collection on your favorite platforms</p>
-                <div class="social-icons">
-                    <a href="#" class="social-icon twitter" data-type="twitter">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                    <a href="#" class="social-icon facebook" data-type="facebook">
-                        <i class="fab fa-facebook-f"></i>
-                    </a>
-                    <a href="#" class="social-icon whatsapp" data-type="whatsapp">
-                        <i class="fab fa-whatsapp"></i>
-                    </a>
-                    <a href="#" class="social-icon telegram" data-type="telegram">
-                        <i class="fab fa-telegram-plane"></i>
-                    </a>
-                    <a href="#" class="social-icon email" data-type="email">
-                        <i class="fas fa-envelope"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
     
     <div class="actions">
         <a href="{% url 'collection_detail' collection.pk %}" class="btn btn-outline-primary">

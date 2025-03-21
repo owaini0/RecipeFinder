@@ -2,28 +2,36 @@
 {% load static %}
 {% block title %}{% if editing %}Edit{% else %}Create{% endif %} Recipe - RecipeFinder{% endblock %}
 
-{% block page_css %}
+{% block main_styles %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <link rel="stylesheet" href="{% static 'css/pages/recipe_form.css' %}">
 {% endblock %}
 
 {% block page_js %}
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<!-- Ensure toast.js is loaded before our form script -->
 <script src="{% static 'js/shared/toast.js' %}"></script>
 <script>
-    // Initialize Select2 before any other scripts run
     $(document).ready(function() {
-        // Make sure the categories field is not marked as required for HTML5 validation
-        // (we'll validate it with JavaScript instead)
         $('#id_categories').prop('required', false);
-        
-        // Initialize Select2 for categories
         try {
             $('#id_categories').select2({
-                placeholder: "Select categories",
+                placeholder: "Select categories or type to create new ones",
                 width: '100%',
                 theme: "classic",
+                tags: true,
+                createTag: function(params) {
+                    var term = $.trim(params.term);
+                    
+                    if (term === '') {
+                        return null;
+                    }
+                    
+                    return {
+                        id: 'new:' + term,
+                        text: term + ' (New)',
+                        newTag: true
+                    };
+                },
                 ajax: {
                     url: "{% url 'category_list_json' %}",
                     dataType: 'json',
@@ -40,18 +48,12 @@
                         };
                     }
                 },
-                // Don't require typing before showing options
                 minimumInputLength: 0
             });
-            
-            // Manually trigger a change to ensure it's fully initialized
             $('#id_categories').trigger('change');
-            
-            // Add an attribute to track initialization
+
             $('#id_categories').attr('data-select2-initialized', 'true');
             console.log('Select2 successfully initialized');
-            
-            // Pre-select categories for editing
             {% if editing and recipe.categories.all %}
             var preselectedCategories = [
                 {% for category in recipe.categories.all %}

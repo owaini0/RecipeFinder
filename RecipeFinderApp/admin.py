@@ -65,18 +65,16 @@ class ChefVerificationAdmin(admin.ModelAdmin):
         }),
     )
     
-    # Custom action to approve verification
     actions = ['approve_verification', 'reject_verification']
     
     def approve_verification(self, request, queryset):
-        # Update verification status and timestamp
+        # Update verification status and set chef status
         for verification in queryset:
             if verification.status != 'approved':
                 verification.status = 'approved'
                 verification.processed_at = timezone.now()
                 verification.save()
                 
-                # Update user profile to mark as verified chef
                 profile = verification.user.profile
                 profile.chef_verified = True
                 profile.save()
@@ -85,7 +83,6 @@ class ChefVerificationAdmin(admin.ModelAdmin):
     approve_verification.short_description = "Approve selected verifications"
     
     def reject_verification(self, request, queryset):
-        # Update verification status and timestamp
         for verification in queryset:
             if verification.status != 'rejected':
                 verification.status = 'rejected'
@@ -95,12 +92,10 @@ class ChefVerificationAdmin(admin.ModelAdmin):
         self.message_user(request, f"Successfully rejected {queryset.count()} verification(s)")
     reject_verification.short_description = "Reject selected verifications"
     
-    # Save model to automatically set processed_at time
     def save_model(self, request, obj, form, change):
         if 'status' in form.changed_data:
             obj.processed_at = timezone.now()
             
-            # If approving, update the user's profile
             if obj.status == 'approved':
                 profile = obj.user.profile
                 profile.chef_verified = True

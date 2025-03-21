@@ -29,6 +29,7 @@ urlpatterns = [
     path('user/follow/status/', views.follow_user_status, name='follow_user_status'),
     path('collection/add/', views.add_to_collection, name='add_to_collection'),
     path('api/categories/', views.category_list_json, name='category_list_json'),
+    path('api/categories/create/', views.category_create, name='category_create'),
 
     # Collections
     path('collection/new/', views.collection_create, name='collection_create'),

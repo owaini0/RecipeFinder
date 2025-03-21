@@ -51,7 +51,7 @@
     width: 50%;
 }
 
-/* Responsive adjustments for tablet and mobile */
+/* Core responsive breakpoints */
 @media (max-width: 768px) {
     /* Stack footer sections into two columns on smaller screens */
     .footer-content {

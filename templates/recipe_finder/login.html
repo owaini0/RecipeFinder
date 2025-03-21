@@ -3,7 +3,7 @@
 
 {% block title %}Login - RecipeFinder{% endblock %}
 
-{% block page_css %}
+{% block main_styles %}
 <link rel="stylesheet" href="{% static 'css/pages/login.css' %}">
 {% endblock %}
 
@@ -35,7 +35,6 @@
             <p>Log in to your RecipeFinder account</p>
         </div>
         
-        <!-- Using novalidate to ensure the form always submits and server validates -->
         <form method="post" class="auth-form" action="{% url 'login' %}" data-no-ajax="true" autocomplete="off" novalidate>
             {% csrf_token %}
             {{ form.non_field_errors }}
@@ -68,20 +67,13 @@
 </div>
 
 <script>
-// Ensure traditional form submission - Version 2 with direct submission
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Login page protection loaded - v2");
     const loginForm = document.querySelector('.auth-form');
     
     if (loginForm) {
-        // Protect the form from AJAX interference
-        console.log("Protecting login form from AJAX interference");
-        
-        // Option 1: Completely disable fetch and XMLHttpRequest during the entire page load
         const originalFetch = window.fetch;
         const originalXHR = window.XMLHttpRequest;
-        
-        // Replace with dummy implementations that log and do nothing
+
         window.fetch = function() {
             console.error('Fetch blocked on login page');
             return Promise.reject('Login page - fetch blocked');
@@ -95,13 +87,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 setRequestHeader: function() {}
             };
         };
-        
-        // Option 2: Add a direct submit handler that doesn't depend on JS
+
         loginForm.addEventListener('submit', function(e) {
-            console.log("Form submission detected - ensuring direct submission");
             
-            // Let the form submit normally, nothing to do here
-            // The form will use the native browser submission mechanism
         });
     }
 });
@@ -109,6 +97,5 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endblock %}
 
 {% block page_js %}
-<!-- Add timestamp to prevent caching -->
 <script src="{% static 'js/pages/login.js' %}?v={{ timestamp }}"></script>
 {% endblock %}

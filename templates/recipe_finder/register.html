@@ -3,7 +3,7 @@
 
 {% block title %}Register - RecipeFinder{% endblock %}
 
-{% block page_css %}
+{% block main_styles %}
 <link rel="stylesheet" href="{% static 'css/pages/register.css' %}">
 {% endblock %}
 
@@ -114,35 +114,24 @@
 </div>
 
 <script>
-// Ensure traditional form submission for registration
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Registration page protection loaded");
     const registerForm = document.querySelector('.auth-form');
     
     if (registerForm) {
-        // Protect the form from AJAX interference
-        console.log("Protecting registration form from AJAX interference");
-        
-        // Completely disable fetch and XMLHttpRequest during the entire page load
         const originalFetch = window.fetch;
         const originalXHR = window.XMLHttpRequest;
         
-        // Replace with dummy implementations that log and do nothing
         window.fetch = function() {
-            console.error('Fetch blocked on registration page');
             return Promise.reject('Registration page - fetch blocked');
         };
         
         window.XMLHttpRequest = function() {
-            console.error('XHR blocked on registration page');
             return {
                 open: function() {},
                 send: function() {},
                 setRequestHeader: function() {}
             };
         };
-        
-        // Password strength checker
         const passwordField = document.querySelector('input[name="password1"]');
         const strengthMeter = document.querySelector('.strength-meter-fill');
         const strengthText = document.querySelector('.strength-text span');
@@ -155,16 +144,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Check password length
                 if (password.length >= 8) strength += 1;
                 
-                // Check for numbers
                 if (/\d/.test(password)) strength += 1;
                 
-                // Check for special characters
                 if (/[^A-Za-z0-9]/.test(password)) strength += 1;
                 
-                // Check for uppercase and lowercase
                 if (/[A-Z]/.test(password) && /[a-z]/.test(password)) strength += 1;
                 
-                // Update strength meter
                 strengthMeter.className = 'strength-meter-fill';
                 if (password.length === 0) {
                     strengthMeter.style.width = '0%';
@@ -185,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Prevent duplicate form submissions
         let formSubmitted = false;
         const submitButton = registerForm.querySelector('button[type="submit"]');
         
@@ -202,7 +186,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (password1 !== password2) {
                 event.preventDefault();
-                // Create or update error message
                 let errorElem = registerForm.querySelector('.password-mismatch-error');
                 if (!errorElem) {
                     errorElem = document.createElement('div');
@@ -212,8 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return false;
             }
-            
-            // Add form submitted indicator and loading state
+
             formSubmitted = true;
             
             if (submitButton) {
@@ -221,7 +203,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitButton.disabled = true;
                 submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
                 
-                // If user navigates away, reset the form after 10 seconds
                 setTimeout(() => {
                     formSubmitted = false;
                     if (submitButton) {
@@ -239,6 +220,5 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endblock %}
 
 {% block page_js %}
-<!-- Add timestamp to prevent caching -->
 <script src="{% static 'js/pages/register.js' %}?v={{ timestamp }}"></script>
 {% endblock %}

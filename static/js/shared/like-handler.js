@@ -13,33 +13,52 @@ document.addEventListener('DOMContentLoaded', function() {
     initLikeButtons();
     initLikeLinks();
     
+    /**
+     * Attach event listeners to all like buttons
+     * Uses event delegation for dynamically added elements
+     */
+    document.addEventListener('click', function(e) {
+        // Handle heart icon clicks in recipe cards
+        if (e.target && e.target.classList.contains('recipe-like-icon')) {
+            e.preventDefault();
+            handleLikeLinkAction(e.target);
+        }
+        
+        // Handle like button clicks on recipe detail page
+        if (e.target && (e.target.classList.contains('like-button') || e.target.parentElement.classList.contains('like-button'))) {
+            e.preventDefault();
+            const button = e.target.classList.contains('like-button') ? e.target : e.target.parentElement;
+            handleLikeAction(button);
+        }
+    });
+    
+    // Load liked state from localStorage and update UI
+    updateLikeIconsFromStorage();
+    
     // Function to get CSRF token
     function getCsrfToken() {
-        console.log("Getting CSRF token for like action");
-        // Try to get from cookie first (Django's recommended approach)
-        try {
-            const cookieMatch = document.cookie.match(/csrftoken=([^;]+)/);
-            if (cookieMatch) {
-                console.log("Found CSRF token in cookie");
-                return cookieMatch[1];
-            }
-        } catch (e) {
-            console.error("Error getting CSRF from cookie:", e);
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+            
+        if (!cookieValue) {
+            // Fallback to looking for the token in the DOM
+            const tokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+            return tokenElement ? tokenElement.value : null;
         }
         
-        // Fallback to hidden input field
-        try {
-            const tokenField = document.querySelector('input[name="csrfmiddlewaretoken"]');
-            if (tokenField) {
-                console.log("Found CSRF token in input field");
-                return tokenField.value;
-            }
-        } catch (e) {
-            console.error("Error getting CSRF from input:", e);
-        }
-        
-        console.warn("No CSRF token found - like request may fail");
-        return '';
+        return cookieValue;
+    }
+    
+    /**
+     * Get like status from localStorage
+     * @param {string} recipeId - The recipe ID 
+     * @returns {boolean} Whether the recipe is liked
+     */
+    function isLikedLocally(recipeId) {
+        const likes = JSON.parse(localStorage.getItem('recipe_likes') || '{}');
+        return likes[recipeId] === true;
     }
     
     // Initialize like buttons (detailed page)
@@ -74,55 +93,61 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle like action for recipe cards
     function handleLikeLinkAction(linkElement) {
-        if (!linkElement) {
-            console.error("Invalid link element");
-            return;
-        }
+        // Get the recipe card container
+        const card = linkElement.closest('.recipe-card');
+        if (!card) return;
         
-        const recipeId = linkElement.getAttribute('data-recipe-id');
-        if (!recipeId) {
-            console.error("Missing recipe ID");
-            return;
-        }
+        // Get the recipe ID
+        const recipeId = card.dataset.recipeId;
+        if (!recipeId) return;
         
-        const heartIcon = linkElement.querySelector('i.fa-heart');
-        const likeCountElement = linkElement.querySelector('.like-count');
+        // Determine the current state
+        const isLiked = linkElement.classList.contains('fas');
         
-        if (!heartIcon || !likeCountElement) {
-            console.error("Missing heart icon or like count element");
-            return;
-        }
-        
-        const isLiked = heartIcon.classList.contains('fas');
-        const currentCount = parseInt(likeCountElement.textContent.trim()) || 0;
-        
-        // Toggle visual state immediately for better UX
+        // Toggle immediately for better UX
         if (isLiked) {
-            heartIcon.classList.remove('fas');
-            heartIcon.classList.add('far');
-            likeCountElement.textContent = Math.max(0, currentCount - 1);
+            linkElement.classList.replace('fas', 'far');
         } else {
-            heartIcon.classList.remove('far');
-            heartIcon.classList.add('fas');
-            likeCountElement.textContent = currentCount + 1;
+            linkElement.classList.replace('far', 'fas');
         }
         
-        // Send the AJAX request to update the like status
-        sendLikeRequest(recipeId, !isLiked, function(success, data) {
+        // Update local storage
+        updateLikeStorage(recipeId, !isLiked);
+        
+        // Get likes count display
+        const likesCountElement = card.querySelector('.likes-count');
+        let likesCount = parseInt(likesCountElement?.textContent || '0');
+        
+        // Optimistically update the likes count
+        if (isLiked) {
+            if (likesCount > 0) likesCount--;
+        } else {
+            likesCount++;
+        }
+        
+        if (likesCountElement) {
+            likesCountElement.textContent = likesCount.toString();
+        }
+        
+        // Send the like request to the server
+        sendLikeRequest(recipeId, !isLiked, function(success) {
             if (!success) {
-                // Revert UI changes if the request failed
+                // Revert the UI change if the server request failed
                 if (isLiked) {
-                    heartIcon.classList.remove('far');
-                    heartIcon.classList.add('fas');
-                    likeCountElement.textContent = currentCount;
+                    linkElement.classList.replace('far', 'fas');
                 } else {
-                    heartIcon.classList.remove('fas');
-                    heartIcon.classList.add('far');
-                    likeCountElement.textContent = currentCount;
+                    linkElement.classList.replace('fas', 'far');
                 }
                 
-                if (typeof Notify !== 'undefined') {
-                    Notify.error('Failed to update like status. Please try again.');
+                // Revert the count
+                if (likesCountElement) {
+                    likesCountElement.textContent = (isLiked ? likesCount + 1 : likesCount - 1).toString();
+                }
+                
+                // Show error notification
+                if (typeof Notify !== 'undefined' && !notificationShown) {
+                    Notify.error('Could not update like. Please try again.');
+                    notificationShown = true;
                 }
             }
         });
@@ -130,64 +155,116 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle like action for recipe cards
     function handleLikeAction(button) {
-        if (!button) {
-            console.error("Invalid button element");
-            return;
-        }
-        
+        // Get the recipe ID
         const recipeId = button.dataset.recipeId;
-        if (!recipeId) {
-            console.error("Missing recipe ID");
-            if (typeof Notify !== 'undefined' && typeof Notify.error === 'function') {
-                Notify.error("Error: Could not identify recipe to like");
-            }
-            return;
-        }
+        if (!recipeId) return;
         
+        // Determine the current state
         const isLiked = button.classList.contains('liked');
-        console.log(`Recipe ${recipeId} current like status: ${isLiked ? 'liked' : 'not liked'}`);
         
-        // Show visual feedback immediately
+        // Toggle immediately for better UX
+        button.classList.toggle('liked');
+        
+        // Get likes count display
+        const likesCountElement = document.querySelector('.like-count');
+        let likesCount = parseInt(likesCountElement?.textContent || '0');
+        
+        // Update local storage
+        updateLikeStorage(recipeId, !isLiked);
+        
+        // Optimistically update the likes count
         if (isLiked) {
-            button.classList.remove('liked');
-            button.classList.add('like-btn');
+            if (likesCount > 0) likesCount--;
         } else {
-            button.classList.add('liked');
-            button.classList.remove('like-btn');
+            likesCount++;
         }
         
-        // Update the like count element visually first
-        const likeCountEl = button.querySelector('.like-count');
-        if (likeCountEl) {
-            const currentCount = parseInt(likeCountEl.textContent) || 0;
-            likeCountEl.textContent = isLiked ? Math.max(0, currentCount - 1) : currentCount + 1;
+        if (likesCountElement) {
+            likesCountElement.textContent = likesCount.toString();
         }
         
-        // Send the AJAX request to update the like status
-        sendLikeRequest(recipeId, !isLiked, function(success, data) {
+        // Update button text
+        if (button.querySelector('.like-text')) {
+            button.querySelector('.like-text').textContent = isLiked ? 'Like' : 'Unlike';
+        }
+        
+        // Send the like request to the server
+        sendLikeRequest(recipeId, !isLiked, function(success) {
             if (!success) {
-                // Revert visual changes on error
-                if (isLiked) {
-                    button.classList.add('liked');
-                    button.classList.remove('like-btn');
-                } else {
-                    button.classList.remove('liked');
-                    button.classList.add('like-btn');
+                // Revert the UI change if the server request failed
+                button.classList.toggle('liked');
+                
+                // Revert the count
+                if (likesCountElement) {
+                    likesCountElement.textContent = (isLiked ? likesCount + 1 : likesCount - 1).toString();
                 }
                 
-                // Revert count change
-                if (likeCountEl) {
-                    const currentCount = parseInt(likeCountEl.textContent) || 0;
-                    likeCountEl.textContent = isLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+                // Revert button text
+                if (button.querySelector('.like-text')) {
+                    button.querySelector('.like-text').textContent = isLiked ? 'Unlike' : 'Like';
+                }
+                
+                // Show error notification
+                if (typeof Notify !== 'undefined' && !notificationShown) {
+                    Notify.error('Could not update like. Please try again.');
+                    notificationShown = true;
                 }
             }
         });
     }
     
+    /**
+     * Update the local storage with like status
+     * @param {string} recipeId - The recipe ID
+     * @param {boolean} isLiked - Whether the recipe is liked 
+     */
+    function updateLikeStorage(recipeId, isLiked) {
+        try {
+            const likes = JSON.parse(localStorage.getItem('recipe_likes') || '{}');
+            likes[recipeId] = isLiked;
+            localStorage.setItem('recipe_likes', JSON.stringify(likes));
+        } catch (e) {
+            // Storage might be full or disabled
+        }
+    }
+    
+    /**
+     * Update all like icons based on localStorage
+     */
+    function updateLikeIconsFromStorage() {
+        try {
+            const likes = JSON.parse(localStorage.getItem('recipe_likes') || '{}');
+            
+            // Update heart icons
+            document.querySelectorAll('.recipe-card').forEach(card => {
+                const recipeId = card.dataset.recipeId;
+                if (recipeId && likes[recipeId]) {
+                    const icon = card.querySelector('.recipe-like-icon');
+                    if (icon && icon.classList.contains('far')) {
+                        icon.classList.replace('far', 'fas');
+                    }
+                }
+            });
+            
+            // Update like button on detail page
+            const detailLikeButton = document.querySelector('.like-button');
+            if (detailLikeButton) {
+                const recipeId = detailLikeButton.dataset.recipeId;
+                if (recipeId && likes[recipeId]) {
+                    detailLikeButton.classList.add('liked');
+                    if (detailLikeButton.querySelector('.like-text')) {
+                        detailLikeButton.querySelector('.like-text').textContent = 'Unlike';
+                    }
+                }
+            }
+        } catch (e) {
+            // Storage might be disabled or corrupted
+        }
+    }
+    
     // Common function to send like request to server
     function sendLikeRequest(recipeId, shouldLike, callback) {
         if (!recipeId) {
-            console.error("Missing recipe ID for like request");
             callback(false);
             return;
         }
@@ -197,114 +274,79 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Get CSRF token
         const csrfToken = getCsrfToken();
-        console.log(`Using CSRF token: ${csrfToken ? csrfToken.substring(0, 5) + '...' : 'none'}`);
         
-        // Add extra debug information to know what's being sent
+        // Add request data
         const requestData = {
             'recipe_id': recipeId,
             'csrfmiddlewaretoken': csrfToken,
-            'action': 'like'  // Add action parameter to ensure proper handling
+            'action': 'like'
         };
-        console.log('Request data:', requestData);
         
-        $.ajax({
-            url: '/recipe/like/',
-            type: 'POST',
-            data: requestData,
+        fetch('/like-recipe/', {
+            method: 'POST',
             headers: {
-                'X-CSRFToken': csrfToken,
-                'Accept': 'application/json'  // Explicitly request JSON response
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
             },
-            dataType: 'json',  // Expect JSON data type
-            success: function(data) {
-                console.log("Like request successful:", data);
-                callback(true, data);
-                
-                // Update all instances of this recipe's like count on the page
-                const allLikeCounts = document.querySelectorAll(`.like-count[data-recipe-id="${recipeId}"], [data-recipe-id="${recipeId}"] .like-count`);
-                allLikeCounts.forEach(counter => {
-                    counter.textContent = data.likes_count;
-                });
-                
-                // Update all like icons for this recipe
-                const allLikeIcons = document.querySelectorAll(`[data-recipe-id="${recipeId}"] i.fa-heart`);
-                allLikeIcons.forEach(icon => {
-                    if (data.liked) {
-                        icon.classList.remove('far');
-                        icon.classList.add('fas');
-                    } else {
-                        icon.classList.remove('fas');
-                        icon.classList.add('far');
-                    }
-                });
-                
-                // Update all like buttons for this recipe
-                const allLikeButtons = document.querySelectorAll(`[data-recipe-id="${recipeId}"].like-btn, [data-recipe-id="${recipeId}"].liked`);
-                allLikeButtons.forEach(btn => {
-                    if (data.liked) {
-                        btn.classList.remove('like-btn');
-                        btn.classList.add('liked');
-                    } else {
-                        btn.classList.remove('liked');
-                        btn.classList.add('like-btn');
-                    }
-                });
-                
-                // Show appropriate notification only if not shown yet
-                if (typeof Notify !== 'undefined' && !notificationShown) {
-                    if (data.liked) {
-                        Notify.success("Recipe added to your favorites");
-                    } else {
-                        Notify.info("Recipe removed from your favorites");
-                    }
-                    notificationShown = true;
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error("Like request failed:", error);
-                console.error("Status:", status);
-                console.error("Response:", xhr.responseText);
-                
-                // Check if the response is HTML (redirect or error page)
-                if (xhr.responseText && xhr.responseText.trim().startsWith('<!DOCTYPE')) {
-                    console.error("Received HTML response instead of JSON - session may have expired");
-                    
-                    // Show a more specific error message
-                    if (typeof Notify !== 'undefined' && !notificationShown) {
-                        Notify.error("Session may have expired. Please refresh the page and try again.");
-                        notificationShown = true;
-                    }
-                    
-                    // Force page reload after a short delay if this continues to happen
-                    setTimeout(function() {
-                        if (confirm("Your session may have expired. Would you like to refresh the page?")) {
-                            window.location.reload();
+            body: new URLSearchParams(requestData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update like counts from server
+            const likesCountElements = document.querySelectorAll('.likes-count, .like-count');
+            likesCountElements.forEach(element => {
+                element.textContent = data.likes_count.toString();
+            });
+            
+            // Update local storage with server response
+            updateLikeStorage(recipeId, data.liked);
+            
+            // Update all icons and buttons
+            document.querySelectorAll('.recipe-card').forEach(card => {
+                if (card.dataset.recipeId === recipeId) {
+                    const icon = card.querySelector('.recipe-like-icon');
+                    if (icon) {
+                        if (data.liked) {
+                            icon.classList.replace('far', 'fas');
+                        } else {
+                            icon.classList.replace('fas', 'far');
                         }
-                    }, 3000);
+                    }
                 }
-                
-                // Check if this is the UNIQUE constraint error (race condition)
-                else if (xhr.responseText && xhr.responseText.includes("UNIQUE constraint failed")) {
-                    console.log("Unique constraint error - this likely means there was a race condition with multiple clicks");
-                    
-                    // Instead of showing an error, just refresh the state
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 500);
-                    
-                    // Don't show the error notification
-                    callback(false);
-                    return;
-                }
-                
-                callback(false);
-                
-                // Show error notification
-                if (typeof Notify !== 'undefined' && !notificationShown) {
-                    Notify.error("Error updating like status. Please try again.");
-                    notificationShown = true;
+            });
+            
+            // Update the like button on detail page
+            const detailLikeButton = document.querySelector('.like-button');
+            if (detailLikeButton && detailLikeButton.dataset.recipeId === recipeId) {
+                if (data.liked) {
+                    detailLikeButton.classList.add('liked');
+                    if (detailLikeButton.querySelector('.like-text')) {
+                        detailLikeButton.querySelector('.like-text').textContent = 'Unlike';
+                    }
+                } else {
+                    detailLikeButton.classList.remove('liked');
+                    if (detailLikeButton.querySelector('.like-text')) {
+                        detailLikeButton.querySelector('.like-text').textContent = 'Like';
+                    }
                 }
             }
+            
+            callback(true);
+        })
+        .catch(error => {
+            // Show error notification if needed
+            if (typeof Notify !== 'undefined' && !notificationShown) {
+                Notify.error('Could not update like. Please try again.');
+                notificationShown = true;
+            }
+            
+            callback(false);
         });
     }
     
@@ -313,6 +355,9 @@ document.addEventListener('DOMContentLoaded', function() {
         initLikeButtons,
         initLikeLinks,
         handleLikeAction,
-        handleLikeLinkAction
+        handleLikeLinkAction,
+        isLikedLocally,
+        updateLikeStorage,
+        updateLikeIconsFromStorage
     };
 }); 

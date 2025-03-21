@@ -19,26 +19,20 @@ from .forms import (
 )
 from django.utils import timezone
 from django.db import transaction
+from django.utils.text import slugify
+import itertools
 
 def home(request):
-    """
-    Homepage displaying featured recipes, popular recipes, and newest additions.
-    This is the main landing page for all users with a curated selection of content.
-    """
-    # Get featured recipes (manually selected by admins)
+    """Main landing page with featured, popular, and newest recipes"""
     featured_recipes = Recipe.objects.filter(featured=True)[:3]
     
-    # Get most liked recipes based on user interactions
     popular_recipes = Recipe.objects.annotate(
         total_likes=Count('likes')).order_by('-total_likes')[:6]
     
-    # Get newest recipes for the fresh content section
     newest_recipes = Recipe.objects.order_by('-created_at')[:6]
     
-    # Load all recipe categories for the navigation menu
     categories = Category.objects.all()
     
-    # Track which recipes the current user has already liked
     liked_recipes_ids = []
     if request.user.is_authenticated:
         liked_recipes_ids = Like.objects.filter(user=request.user).values_list('recipe_id', flat=True)
@@ -52,17 +46,13 @@ def home(request):
     }
     return render(request, 'recipe_finder/home.html', context)
 
-# Authentication Views
 def register(request):
-    """
-    User registration view for new account creation.
-    Creates both a User object and its associated UserProfile.
-    """
+    """User registration with profile creation"""
     if request.user.is_authenticated:
         messages.info(request, 'You are already logged in.')
         return redirect('home')
     
-    # Block any AJAX requests to this endpoint
+    # Block AJAX requests
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return HttpResponseForbidden("AJAX registration is disabled. Please use traditional form submission.")
         
@@ -70,15 +60,12 @@ def register(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             try:
-                # Use transaction to ensure database integrity
+                # Ensure database integrity
                 with transaction.atomic():
-                    # Create the user account
                     user = form.save()
-                    
-                    # Create user profile using get_or_create to avoid uniqueness errors
                     UserProfile.objects.get_or_create(user=user)
                 
-                # Log the user in
+                # Auto-login after registration
                 username = form.cleaned_data.get('username')
                 password = form.cleaned_data.get('password1')
                 user = authenticate(username=username, password=password)
@@ -93,17 +80,16 @@ def register(request):
             except Exception as e:
                 messages.error(request, f'An error occurred during registration: {str(e)}')
         else:
-            # If form is invalid, display error message to help user fix the issues
+            # Help user fix form errors
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f'{field.replace("_", " ").title()}: {error}')
     else:
         form = UserRegistrationForm()
     
-    # Add timestamp for cache-busting JS
     context = {
         'form': form,
-        'timestamp': int(timezone.now().timestamp())
+        'timestamp': int(timezone.now().timestamp())  # Cache-busting
     }
     
     return render(request, 'recipe_finder/register.html', context)
@@ -113,7 +99,6 @@ def user_login(request):
     if request.user.is_authenticated:
         return redirect('home')
     
-    # Block any AJAX requests to this endpoint
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return HttpResponseForbidden("AJAX login is disabled. Please use traditional form submission.")
         
@@ -127,7 +112,6 @@ def user_login(request):
                 login(request, user)
                 messages.success(request, f'Welcome back, {username}!')
                 
-                # Get the next URL if available, otherwise default to home
                 next_url = request.GET.get('next', 'home')
                 return redirect(next_url)
         else:
@@ -135,17 +119,16 @@ def user_login(request):
     else:
         form = UserLoginForm()
     
-    # Add timestamp for cache-busting JS
     context = {
         'form': form,
-        'timestamp': int(timezone.now().timestamp())
+        'timestamp': int(timezone.now().timestamp())  # Cache-busting
     }
     
     return render(request, 'recipe_finder/login.html', context)
 
 @login_required
 def user_logout(request):
-    """User logout view"""
+    """Log out the current user"""
     logout(request)
     messages.success(request, 'You have been logged out.')
     return redirect('home')
@@ -178,6 +161,13 @@ def profile(request, username=None):
             recipe__in=recipes
         ).values_list('recipe_id', flat=True)
     
+    # Get all recipes liked by the profile user
+    liked_recipes = []
+    if profile_user:
+        liked_recipes = Recipe.objects.filter(
+            likes__user=profile_user
+        ).select_related('author').prefetch_related('images')
+    
     # Check if current user follows profile user
     is_following = False
     if request.user.is_authenticated and request.user != profile_user:
@@ -195,6 +185,7 @@ def profile(request, username=None):
         'profile_user': profile_user,
         'recipes': recipes,
         'collections': collections,
+        'liked_recipes': liked_recipes,
         'liked_recipes_ids': liked_recipes_ids,
         'is_following': is_following,
         'followers_count': followers_count,
@@ -320,6 +311,10 @@ def recipe_detail(request, slug):
                         'username': request.user.username,
                         'content': new_comment.content
                     })
+                else:
+                    # Non-AJAX comment submission should redirect
+                    messages.success(request, 'Comment added successfully!')
+                    return redirect('recipe_detail', slug=slug)
         else:
             # Regular form submission
             comment_form = CommentForm(request.POST)
@@ -535,41 +530,37 @@ def like_recipe(request):
     recipe_id = request.POST.get('recipe_id')
     
     if not recipe_id:
-        print("ERROR: No recipe_id provided in POST data")
         return JsonResponse({'error': 'No recipe_id provided'}, status=400)
     
     try:
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        
-        print(f"Processing like for recipe {recipe_id} by user {request.user.username}")
+        # The try block should only handle normal processing,
+        # not the 404 case which should be handled by get_object_or_404
+        recipe = Recipe.objects.get(pk=recipe_id)
         
         # Check if user already liked this recipe
         existing_like = Like.objects.filter(user=request.user, recipe=recipe).first()
         
         if existing_like:
             # User already liked it, so unlike
-            print(f"User {request.user.username} is unliking recipe {recipe_id}")
             existing_like.delete()
             liked = False
-            print(f"Like record deleted, current count: {recipe.likes.count()}")
         else:
             # User hasn't liked it yet, so create a new like
-            print(f"User {request.user.username} is liking recipe {recipe_id}")
             # Use get_or_create to prevent duplicate likes (race condition)
             _, created = Like.objects.get_or_create(user=request.user, recipe=recipe)
             liked = True
-            print(f"Like record created: {created}, current count: {recipe.likes.count()}")
         
         # Get the updated count directly from the database
         updated_count = recipe.likes.count()
-        print(f"Final likes count for recipe {recipe_id}: {updated_count}")
         
         return JsonResponse({
             'liked': liked,
             'likes_count': updated_count
         })
+    except Recipe.DoesNotExist:
+        # If recipe doesn't exist, return 404
+        return JsonResponse({'error': 'Recipe not found'}, status=404)
     except Exception as e:
-        print(f"ERROR in like_recipe: {str(e)}")
         # More specific error response
         if "UNIQUE constraint failed" in str(e):
             # This is a race condition - the user already liked this recipe
@@ -592,19 +583,15 @@ def like_recipe(request):
 def follow_user(request):
     """AJAX view for following/unfollowing a user"""
     user_id = request.POST.get('user_id')
-    print(f"Follow request received for user_id: {user_id}")
     
     if not user_id:
-        print("ERROR: No user_id provided in POST data")
         return JsonResponse({'error': 'No user_id provided'}, status=400)
     
     try:
         user_to_follow = get_object_or_404(User, id=user_id)
-        print(f"User to follow: {user_to_follow.username} (ID: {user_to_follow.id})")
         
         # Can't follow yourself
         if request.user == user_to_follow:
-            print(f"User {request.user.username} attempted to follow themselves")
             return JsonResponse({'error': 'You cannot follow yourself'}, status=400)
         
         # Check if already following
@@ -615,42 +602,33 @@ def follow_user(request):
         
         if existing_follow:
             # User already followed, so unfollow
-            print(f"User {request.user.username} is unfollowing {user_to_follow.username}")
             existing_follow.delete()
             following = False
-            print(f"Follow record deleted. Current followers: {user_to_follow.followers.count()}")
         else:
             # Create new follow
-            print(f"User {request.user.username} is following {user_to_follow.username}")
             Follow.objects.create(follower=request.user, following=user_to_follow)
             following = True
-            print(f"Follow record created. Current followers: {user_to_follow.followers.count()}")
         
         # Get the updated followers count
         followers_count = user_to_follow.followers.count()
-        print(f"Final followers count for {user_to_follow.username}: {followers_count}")
         
         return JsonResponse({
             'following': following,
             'followers_count': followers_count
         })
     except Exception as e:
-        print(f"ERROR in follow_user: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 def follow_user_status(request):
     """AJAX view for getting current follow status and follower count"""
     user_id = request.GET.get('user_id')
-    print(f"Follow status check for user_id: {user_id}")
     
     if not user_id:
-        print("ERROR: No user_id provided in GET data")
         return JsonResponse({'error': 'User ID is required'}, status=400)
     
     try:
         user_to_check = User.objects.get(id=user_id)
-        print(f"Checking follow status for: {user_to_check.username} (ID: {user_to_check.id})")
         
         # Check if the current user is following the specified user
         following = False
@@ -659,15 +637,12 @@ def follow_user_status(request):
                 follower=request.user,
                 following=user_to_check
             ).exists()
-            print(f"Is {request.user.username} following {user_to_check.username}? {following}")
         
         # Get the follower count
         followers_count = user_to_check.followers.count()
-        print(f"Follower count for {user_to_check.username}: {followers_count}")
         
         # Get the following count
         following_count = user_to_check.following.count()
-        print(f"Following count for {user_to_check.username}: {following_count}")
         
         return JsonResponse({
             'following': following,
@@ -675,22 +650,15 @@ def follow_user_status(request):
             'following_count': following_count
         })
     except User.DoesNotExist:
-        print(f"ERROR: User with ID {user_id} not found")
         return JsonResponse({'error': 'User not found'}, status=404)
     except Exception as e:
-        print(f"ERROR in follow_user_status: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 # Collection Views
 @login_required
 def collection_list(request):
     """View for listing a user's collections"""
-    print("collection_list view called")
-    print(f"User: {request.user.username}")
-    print(f"Is JSON requested: {request.GET.get('format') == 'json'}")
-    
     collections = Collection.objects.filter(user=request.user)
-    print(f"Found {collections.count()} collections")
     
     # Check if JSON format is requested
     if request.GET.get('format') == 'json':
@@ -702,7 +670,6 @@ def collection_list(request):
                 'recipes': list(collection.recipes.values_list('id', flat=True))
             }
             collections_data.append(collection_data)
-        print(f"Returning JSON data: {collections_data}")
         return JsonResponse({'collections': collections_data})
     
     return render(request, 'recipe_finder/collection_list.html', {'collections': collections})
@@ -791,22 +758,14 @@ def collection_delete(request, pk):
 @require_POST
 def add_to_collection(request):
     """View for adding/removing a recipe from a collection"""
-    print("add_to_collection view called")
-    print(f"User: {request.user.username}")
-    
     recipe_id = request.POST.get('recipe_id')
     collection_id = request.POST.get('collection_id')
-    
-    print(f"Recipe ID: {recipe_id}, Collection ID: {collection_id}")
     
     recipe = get_object_or_404(Recipe, id=recipe_id)
     collection = get_object_or_404(Collection, id=collection_id)
     
-    print(f"Recipe: {recipe.title}, Collection: {collection.name}")
-    
     # Check if user owns the collection
     if collection.user != request.user:
-        print(f"Permission denied: Collection owned by {collection.user.username}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'error': 'You do not own this collection'}, status=403)
         else:
@@ -815,13 +774,11 @@ def add_to_collection(request):
     
     if recipe in collection.recipes.all():
         # Remove recipe if it's already in collection
-        print(f"Removing recipe {recipe.id} from collection {collection.id}")
         collection.recipes.remove(recipe)
         in_collection = False
         message = f'Recipe removed from "{collection.name}"'
     else:
         # Add recipe to collection
-        print(f"Adding recipe {recipe.id} to collection {collection.id}")
         collection.recipes.add(recipe)
         in_collection = True
         message = f'Recipe added to "{collection.name}"'
@@ -832,7 +789,6 @@ def add_to_collection(request):
             'in_collection': in_collection,
             'collection_name': collection.name
         }
-        print(f"JSON Response: {response_data}")
         return JsonResponse(response_data)
     else:
         # Handle regular form submission
@@ -877,6 +833,49 @@ def category_list_json(request):
     category_data = [{'id': cat.id, 'name': cat.name} for cat in categories]
     
     return JsonResponse({'categories': category_data})
+
+@login_required
+@require_POST
+def category_create(request):
+    """API endpoint to create a new category"""
+    category_name = request.POST.get('name', '').strip()
+    
+    if not category_name:
+        return JsonResponse({'success': False, 'error': 'Category name is required'}, status=400)
+    
+    # Check if category already exists
+    existing_category = Category.objects.filter(name__iexact=category_name).first()
+    if existing_category:
+        # Return the existing category
+        return JsonResponse({
+            'success': True, 
+            'category': {'id': existing_category.id, 'name': existing_category.name}
+        })
+    
+    # Create a new category
+    import itertools
+    
+    # Generate a unique slug
+    max_length = Category._meta.get_field('slug').max_length
+    slug_candidate = slug_original = slugify(category_name)[:max_length]
+    
+    for i in itertools.count(1):
+        if not Category.objects.filter(slug=slug_candidate).exists():
+            break
+        slug_candidate = '{}-{}'.format(slug_original[:max_length - len(str(i)) - 1], i)
+    
+    # Create the new category
+    try:
+        category = Category.objects.create(
+            name=category_name,
+            slug=slug_candidate
+        )
+        return JsonResponse({
+            'success': True, 
+            'category': {'id': category.id, 'name': category.name}
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
 def chef_verification(request):

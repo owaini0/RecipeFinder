@@ -5,7 +5,7 @@
 }
 
 .card {
-    background: linear-gradient(135deg, var(--light-color) 0%, rgba(255, 255, 255, 0.95) 100%);
+    background: var(--light-color);
     margin-bottom: 30px;
     width: 100%;
     box-sizing: border-box;
@@ -32,18 +32,13 @@
 .card-body {
     width: 100%;
     padding: 30px;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%);
 }
 
 .recipe-title {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 8px;
-    color: #333;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #1a6ca8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--primary-color);
     line-height: 1.2;
 }
 
@@ -926,7 +921,6 @@
     }
 
     .recipe-title {
-        -webkit-text-fill-color: #000 !important;
         color: #000 !important;
         background: none !important;
     }

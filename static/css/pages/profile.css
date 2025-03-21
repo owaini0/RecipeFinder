@@ -1,21 +1,9 @@
-/* 
- * Note: Common hover styles have been moved to components.css
- * to avoid duplication. This includes:
- * - Card hover effects 
- * - Button hover styles
- * - Image zoom hover effects
- * - Link hover colors
- */
-
-/* Profile Page Styles */
-
 .profile-container {
     max-width: 1200px;
     margin: 40px auto;
     padding: 0 20px;
 }
 
-/* Profile Header */
 .profile-header {
     background-color: white;
     border-radius: 15px;
@@ -169,7 +157,6 @@
     text-decoration: none;
 }
 
-/* Profile Content */
 .profile-content {
     background-color: white;
     border-radius: 15px;
@@ -220,7 +207,6 @@
     display: block;
 }
 
-/* Recipe and Collection Grids */
 .recipes-grid, .collections-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -316,7 +302,6 @@
     color: #ccc;
 }
 
-/* Empty states */
 .no-content {
     text-align: center;
     padding: 60px 20px;
@@ -469,7 +454,6 @@
     color: white;
 }
 
-/* Responsive styles */
 @media (max-width: 768px) {
     .profile-info {
         flex-direction: column;
@@ -499,7 +483,6 @@
     }
 }
 
-/* Verification Modal Styles */
 .verification-modal {
     display: none;
     position: fixed;
@@ -569,11 +552,20 @@
     margin-bottom: 0;
 }
 
-/* Verified badge styling */
 .verified-badge {
     color: #4CAF50;
     font-size: 0.85em;
     margin-left: 3px;
     vertical-align: middle;
+}
+
+.recipe-info .like-recipe-link .fas.fa-heart,
+.recipe-meta .like-recipe-link .fas.fa-heart {
+    color: #e74c3c;
+}
+
+.recipe-info .like-recipe-link:hover .far.fa-heart,
+.recipe-meta .like-recipe-link:hover .far.fa-heart {
+    color: #e74c3c;
 }
 

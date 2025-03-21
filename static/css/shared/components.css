@@ -20,6 +20,7 @@
     color: var(--primary-color);
 }
 
+/* Form elements */
 .form-group {
     margin-bottom: 20px;
 }
@@ -55,6 +56,7 @@
     outline: none;
 }
 
+/* Card components */
 .card {
     background: var(--light-color);
     border-radius: 15px;
@@ -63,6 +65,7 @@
     transition: transform 0.3s ease;
 }
 
+/* Notifications */
 .alert {
     padding: 15px;
     border-radius: 8px;
@@ -94,6 +97,7 @@
     opacity: 0.5;
 }
 
+/* Navigation elements */
 .nav-link {
     text-decoration: none;
     color: var(--text-color);
@@ -126,6 +130,7 @@
     color: white;
 }
 
+/* Toast notifications */
 #toast-container {
     position: fixed;
     top: 20px;
@@ -149,7 +154,6 @@
     transform: translateX(50px);
     transition: all 0.3s ease;
     position: relative;
-    overflow: hidden;
 }
 
 .recipe-toast.show {
@@ -158,7 +162,7 @@
 }
 
 .recipe-toast.info-toast {
-    border-left-color: #3498db;
+    border-left-color: #81B29A;
 }
 
 .recipe-toast.error-toast {
@@ -172,16 +176,15 @@
 .recipe-toast-content {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
 }
 
 .recipe-toast-content i {
-    font-size: 1.5rem;
-    color: #81B29A;
+    font-size: 20px;
 }
 
 .recipe-toast.info-toast i {
-    color: #3498db;
+    color: #81B29A;
 }
 
 .recipe-toast.error-toast i {
@@ -193,14 +196,14 @@
 }
 
 .recipe-toast-content span {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #333;
     flex: 1;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.4;
 }
 
 .recipe-toast::before {
-    animation: toast-countdown 3s linear forwards;
+    content: "";
 }
 
 @keyframes toast-countdown {
@@ -208,23 +211,23 @@
         width: 100%;
     }
     to {
-        width: 0%;
+        width: 0;
     }
 }
 
+/* Mobile responsiveness */
 @media (max-width: 576px) {
     #toast-container {
-        top: auto;
-        bottom: 20px;
-        right: 50%;
-        transform: translateX(50%);
-        width: 90%;
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        width: auto;
     }
     
     .recipe-toast {
-        width: 100%;
         padding: 12px 15px;
-        transform: translateY(20px);
+        border-left-width: 3px;
     }
     
     .recipe-toast.show {
@@ -232,14 +235,14 @@
     }
     
     .recipe-toast-content i {
-        font-size: 1.2rem;
+        font-size: 18px;
     }
 }
 
 .textarea-instruction-input {
-    width: 60% !important;
+    resize: vertical;
 }
 
 .input-ingredient-input {
-    width: 40% !important;
+    margin-bottom: 15px;
 }
