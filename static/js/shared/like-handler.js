@@ -6,6 +6,35 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Like handler initialized");
     
+    // For jQuery compatibility - ensure jQuery doesn't handle these clicks separately
+    if (typeof jQuery !== 'undefined') {
+        console.log("Setting jQuery event handler overrides");
+        jQuery(document).off('click', '.like-recipe-link');
+        jQuery(document).off('click', '.recipe-like-icon, .fa-heart');
+        jQuery(document).off('click', '.like-button');
+        
+        // Also ensure any future jQuery bindings are cleared
+        const originalOn = jQuery.fn.on;
+        jQuery.fn.on = function() {
+            if (arguments[0] === 'click' && (
+                (typeof arguments[1] === 'string' && 
+                 (arguments[1].includes('like-recipe-link') || 
+                  arguments[1].includes('fa-heart') || 
+                  arguments[1].includes('like-button'))
+                ) || 
+                (typeof arguments[1] !== 'string' && 
+                 typeof arguments[0] === 'string' && 
+                 (arguments[0].includes('click.like') || 
+                  arguments[0].includes('click .like'))
+                )
+            )) {
+                console.warn('Attempted to bind jQuery click handler for likes - suppressed');
+                return this;
+            }
+            return originalOn.apply(this, arguments);
+        };
+    }
+    
     // Flag to prevent duplicate notifications
     let notificationShown = false;
     
@@ -21,9 +50,13 @@ document.addEventListener('DOMContentLoaded', function() {
      * Uses event delegation for dynamically added elements
      */
     document.addEventListener('click', function(e) {
+        console.log(`CLICK DEBUG: Click event on element:`, e.target);
+        console.log(`CLICK DEBUG: Element classes:`, e.target.className);
+        
         // Handle heart icon clicks in recipe cards
         if (e.target && (e.target.classList.contains('recipe-like-icon') || e.target.classList.contains('fa-heart'))) {
             e.preventDefault();
+            console.log(`CLICK DEBUG: Heart icon clicked, passing to handleLikeLinkAction`);
             handleLikeLinkAction(e.target);
         }
         
@@ -31,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target && (e.target.classList.contains('like-button') || e.target.parentElement.classList.contains('like-button'))) {
             e.preventDefault();
             const button = e.target.classList.contains('like-button') ? e.target : e.target.parentElement;
+            console.log(`CLICK DEBUG: Like button clicked, passing to handleLikeAction`);
             handleLikeAction(button);
         }
     });
@@ -85,11 +119,24 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Found ${likeLinks.length} like links on page`);
         
         likeLinks.forEach((link, index) => {
-            link.addEventListener('click', function(e) {
+            // Remove any existing click handlers directly from the DOM element
+            const newLink = link.cloneNode(true);
+            link.parentNode.replaceChild(newLink, link);
+            
+            // Add our click handler
+            newLink.addEventListener('click', function(e) {
                 e.preventDefault();
-                console.log(`Like link ${index + 1} clicked`);
+                e.stopPropagation(); // Stop event bubbling
+                console.log(`Direct like link ${index + 1} clicked`);
                 
-                handleLikeLinkAction(this);
+                const icon = this.querySelector('i.fa-heart');
+                if (icon) {
+                    handleLikeLinkAction(icon);
+                } else {
+                    handleLikeLinkAction(this);
+                }
+                
+                return false; // Prevent default and stop propagation
             });
         });
     }
@@ -282,8 +329,28 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateLikeIconsFromStorage() {
         try {
             const likes = JSON.parse(localStorage.getItem('recipe_likes') || '{}');
+            console.log("Updating like icons from storage, liked recipes:", Object.keys(likes).filter(id => likes[id]));
             
-            // Update heart icons
+            // Update heart icons within .like-recipe-link elements 
+            document.querySelectorAll('.like-recipe-link').forEach(link => {
+                const recipeId = link.dataset.recipeId;
+                if (recipeId && likes[recipeId]) {
+                    const icon = link.querySelector('i.fa-heart');
+                    if (icon) {
+                        // Handle FontAwesome 5
+                        if (icon.classList.contains('far')) {
+                            icon.classList.replace('far', 'fas');
+                        }
+                        // Handle FontAwesome 6 (if used)
+                        if (icon.classList.contains('fa-regular')) {
+                            icon.classList.remove('fa-regular');
+                            icon.classList.add('fa-solid');
+                        }
+                    }
+                }
+            });
+            
+            // Legacy support for recipe cards with direct data-recipe-id attribute
             document.querySelectorAll('.recipe-card').forEach(card => {
                 const recipeId = card.dataset.recipeId;
                 if (recipeId && likes[recipeId]) {
@@ -316,6 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (e) {
             // Storage might be disabled or corrupted
+            console.warn("Error updating like icons:", e);
         }
     }
     
@@ -369,6 +437,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Common function to send like request to server
     function sendLikeRequest(recipeId, shouldLike, callback) {
         if (!recipeId) {
+            console.error('No recipe ID provided for like request');
             callback(false);
             return;
         }
@@ -378,6 +447,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Get CSRF token
         const csrfToken = getCsrfToken();
+        if (!csrfToken) {
+            console.error('No CSRF token found');
+        }
         
         // Add request data
         const requestData = {
@@ -386,22 +458,47 @@ document.addEventListener('DOMContentLoaded', function() {
             'action': 'like'
         };
         
-        fetch('/recipe/like/', {
+        // The URL to fetch - MUST use /recipe/like/ as configured in the Django URLs
+        const url = '/recipe/like/';
+        
+        console.log(`%c LIKE REQUEST `, 'background: #4CAF50; color: white; font-size: 14px; font-weight: bold;');
+        console.table({
+            'URL': url,
+            'Recipe ID': recipeId,
+            'Action': shouldLike ? 'like' : 'unlike',
+            'CSRF Token': csrfToken ? csrfToken.substring(0, 6) + '...' : 'MISSING'
+        });
+        
+        const headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
+        };
+        
+        console.log('Request headers:');
+        console.table(headers);
+        
+        const params = new URLSearchParams(requestData);
+        console.log('Request body (urlencoded):', params.toString());
+        
+        fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': csrfToken
-            },
-            body: new URLSearchParams(requestData)
+            headers: headers,
+            body: params
         })
         .then(response => {
+            console.log(`%c RESPONSE ${response.status} `, 
+                        response.ok ? 'background: #4CAF50; color: white;' : 'background: #F44336; color: white;', 
+                        response);
+            
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
             }
             return response.json();
         })
         .then(data => {
+            console.log(`LIKE DEBUG: Success response data:`, data);
+            
             // Update like counts from server
             const likesCountElements = document.querySelectorAll('.likes-count, .like-count');
             likesCountElements.forEach(element => {
@@ -493,6 +590,8 @@ document.addEventListener('DOMContentLoaded', function() {
             callback(true);
         })
         .catch(error => {
+            console.error(`Like request failed: ${error.message}`);
+            
             // Show error notification if needed
             if (typeof Notify !== 'undefined' && !notificationShown) {
                 Notify.error('Could not update like. Please try again.');
