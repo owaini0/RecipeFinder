@@ -144,15 +144,6 @@ class Like(models.Model):
 
 # User comments on recipes
 class Comment(models.Model):
-    recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE, related_name='comments')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    text = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Comment by {self.user.username} on {self.recipe.title}"
-
-class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='comments')
     content = models.TextField()
