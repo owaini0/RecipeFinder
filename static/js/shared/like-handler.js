@@ -1,108 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Like handler initialized");
     
-    // Emergency fix for PythonAnywhere issue - check if we're on the right domain
-    if (window.location.hostname.includes('pythonanywhere.com')) {
-        console.log(`%c PYTHONANYWHERE DETECTED `, 'background: #E91E63; color: white; font-size: 16px; font-weight: bold;');
-        
-        // Add a wrapper that will intercept any URLs with the full domain
-        // This is a last-resort defense against hardcoded URLs
-        const wrapperScript = document.createElement('script');
-        wrapperScript.textContent = `
-            // Create a direct global property to force the correct API URL
-            Object.defineProperty(window, '__recipe_like_url__', {
-                value: '/recipe/like/',
-                writable: false,
-                configurable: false
-            });
-            
-            // Final catch-all - replace any global reference to the old URL
-            window.addEventListener('load', function() {
-                console.log("Running final URL cleanup");
-                
-                // Force immediate regex replacements in any script elements
-                const scripts = document.querySelectorAll('script:not([src])');
-                for (let i = 0; i < scripts.length; i++) {
-                    if (scripts[i].textContent.includes('/like-recipe/')) {
-                        console.warn("Found script with hardcoded like-recipe URL!");
-                    }
-                }
-                
-                // Last-resort function to intercept any requests at the network level
-                (function(open) {
-                    XMLHttpRequest.prototype.open = function() {
-                        if (arguments[1] && 
-                            typeof arguments[1] === 'string' && 
-                            arguments[1].includes('like-recipe')) {
-                            
-                            console.warn('Final intercept of XMLHttpRequest to: ' + arguments[1]);
-                            arguments[1] = '/recipe/like/';
-                        }
-                        open.apply(this, arguments);
-                    };
-                })(XMLHttpRequest.prototype.open);
-            });
-        `;
-        document.head.appendChild(wrapperScript);
-    }
-    
-    // Global error handler to catch any network errors and log detailed information
-    window.addEventListener('error', function(e) {
-        if (e && e.target && e.target.tagName === 'SCRIPT') {
-            console.error('Script loading error:', e);
-        }
-        
-        if (e && e.message && e.message.includes('like-recipe')) {
-            console.error('Caught like-recipe related error:', e.message);
-            // Show user-friendly error message
-            if (typeof Notify !== 'undefined') {
-                Notify.error('Like feature error detected. Please refresh the page.');
-            }
-        }
-    });
-    
-    // Special handler for fetch errors
-    window.addEventListener('unhandledrejection', function(e) {
-        if (e && e.reason && (e.reason.message || '').includes('like-recipe')) {
-            console.error('Caught unhandled promise rejection with like-recipe:', e.reason);
-            // Show user-friendly error message 
-            if (typeof Notify !== 'undefined') {
-                Notify.error('Like feature error detected. Please refresh the page.');
-            }
-        }
-    });
-    
     // Add a site-wide variable to store the current base URL
     window.RECIPE_FINDER_BASE_URL = window.location.origin;
-    
-    // Helper function to ensure we only use relative URLs for API calls
-    function getRelativeApiUrl(endpoint) {
-        // Always force a relative URL by removing any domain prefix
-        if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
-            // Extract just the path portion of the URL
-            try {
-                const url = new URL(endpoint);
-                console.warn(`Converting absolute URL ${endpoint} to relative path ${url.pathname}`);
-                return url.pathname;
-            } catch (e) {
-                console.error('Invalid URL:', endpoint);
-                // Fallback - try to extract path after domain
-                const pathMatch = endpoint.match(/https?:\/\/[^\/]+(\/.*)/);
-                if (pathMatch && pathMatch[1]) {
-                    console.warn(`Fallback: converting ${endpoint} to ${pathMatch[1]}`);
-                    return pathMatch[1];
-                }
-            }
-        }
-        
-        // If the endpoint already begins with /, it's already a relative URL
-        if (endpoint.startsWith('/')) {
-            return endpoint;
-        }
-        
-        // Otherwise, add the leading slash to make it a relative URL
-        return '/' + endpoint;
-    }
     
     // Override XMLHttpRequest for legacy code that might use it
     const originalXHROpen = XMLHttpRequest.prototype.open;
@@ -111,15 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof url === 'string' && 
             (url.includes('/like-recipe/') || url.match(/https?:\/\/[^\/]+\/like-recipe\//))) {
             
-            console.warn('Intercepted XMLHttpRequest to deprecated like-recipe URL, redirecting to recipe/like/');
-            
             if (url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
                 url = url.replace(/\/like-recipe\//, '/recipe/like/');
             } else {
                 url = url.replace('/like-recipe/', '/recipe/like/');
             }
-            
-            console.log('XMLHttpRequest redirected to:', url);
         }
         
         // Call the original method with possibly modified URL
@@ -128,48 +24,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const originalFetch = window.fetch;
     window.fetch = function(input, init) {
-        let url = typeof input === 'string' ? input : input.url;
+        const url = typeof input === 'string' ? input : input.url;
         
-        // Log all fetch requests for debugging
-        console.log(`FETCH DEBUG: Original URL: ${url}`);
-        
-        // Check if this is a like-related request
-        if (url.includes('like-recipe') || url.includes('recipe/like')) {
-            // Start with the most specific like-recipe URL pattern
-            if (url === '/like-recipe/' || 
-                url.startsWith('/like-recipe/?') || 
-                url.includes('/like-recipe/') || 
-                url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
-                
-                // Force to the correct relative URL using our helper
-                let newUrl = getRelativeApiUrl('/recipe/like/');
-                console.warn(`Intercepted fetch to ${url}, redirecting to ${newUrl}`);
-                
-                if (typeof input !== 'string') {
-                    const newRequest = new Request(newUrl, input);
-                    return originalFetch(newRequest, init);
-                } else {
-                    return originalFetch(newUrl, init);
-                }
-            }
-        }
-        
-        // Always ensure relative URLs for all API requests (preventative)
-        if (url.startsWith('http') && (
-            url.includes('/api/') || 
-            url.includes('/recipe/') ||
-            url.includes('/collection/') ||
-            url.includes('/user/')
-        )) {
-            let relativeUrl = getRelativeApiUrl(url);
-            console.warn(`Converting absolute API URL ${url} to relative ${relativeUrl}`);
+        if (url === '/like-recipe/' || 
+            url.startsWith('/like-recipe/?') || 
+            url.includes('/like-recipe/') || 
+            url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
             
-            if (typeof input !== 'string') {
-                const newRequest = new Request(relativeUrl, input);
-                return originalFetch(newRequest, init);
+            let newUrl;
+            
+            // Handle both absolute and relative URLs
+            if (url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
+                // Absolute URL - replace the path part
+                newUrl = url.replace(/\/like-recipe\//, '/recipe/like/');
             } else {
-                return originalFetch(relativeUrl, init);
+                // Relative URL
+                newUrl = url.replace('/like-recipe/', '/recipe/like/');
             }
+            
+            // If input is a Request object, create a new one with the updated URL
+            if (typeof input !== 'string') {
+                const newRequest = new Request(newUrl, input);
+                return originalFetch(newRequest, init);
+            }
+            
+            // If input is a string, just use the new URL
+            return originalFetch(newUrl, init);
         }
         
         // Otherwise, proceed with original fetch
@@ -194,16 +74,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     settings.url.includes('/like-recipe/') ||
                     settings.url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
                     
-                    console.warn('Intercepted jQuery ajax request to deprecated like-recipe URL, redirecting to recipe/like/');
-                    
                     // Handle both absolute and relative URLs
                     if (settings.url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
                         settings.url = settings.url.replace(/\/like-recipe\//, '/recipe/like/');
                     } else {
                         settings.url = settings.url.replace('/like-recipe/', '/recipe/like/');
                     }
-                    
-                    console.log('Redirected Ajax URL to:', settings.url);
                 }
             }
             
@@ -214,7 +90,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // For jQuery compatibility - ensure jQuery doesn't handle these clicks separately
     if (typeof jQuery !== 'undefined') {
-        console.log("Setting jQuery event handler overrides");
         jQuery(document).off('click', '.like-recipe-link');
         jQuery(document).off('click', '.recipe-like-icon, .fa-heart');
         jQuery(document).off('click', '.like-button');
@@ -234,7 +109,6 @@ document.addEventListener('DOMContentLoaded', function() {
                   arguments[0].includes('click .like'))
                 )
             )) {
-                console.warn('Attempted to bind jQuery click handler for likes - suppressed');
                 return this;
             }
             return originalOn.apply(this, arguments);
@@ -247,9 +121,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the local storage from the initial page load
     initLikeStorageFromHTML();
     
-    // Fix any hardcoded URLs in the DOM
-    fixHardcodedUrls();
-    
     // Initialize like buttons and links
     initLikeButtons();
     initLikeLinks();
@@ -259,13 +130,9 @@ document.addEventListener('DOMContentLoaded', function() {
      * Uses event delegation for dynamically added elements
      */
     document.addEventListener('click', function(e) {
-        console.log(`CLICK DEBUG: Click event on element:`, e.target);
-        console.log(`CLICK DEBUG: Element classes:`, e.target.className);
-        
         // Handle heart icon clicks in recipe cards
         if (e.target && (e.target.classList.contains('recipe-like-icon') || e.target.classList.contains('fa-heart'))) {
             e.preventDefault();
-            console.log(`CLICK DEBUG: Heart icon clicked, passing to handleLikeLinkAction`);
             handleLikeLinkAction(e.target);
         }
         
@@ -273,7 +140,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target && (e.target.classList.contains('like-button') || e.target.parentElement.classList.contains('like-button'))) {
             e.preventDefault();
             const button = e.target.classList.contains('like-button') ? e.target : e.target.parentElement;
-            console.log(`CLICK DEBUG: Like button clicked, passing to handleLikeAction`);
             handleLikeAction(button);
         }
     });
@@ -310,13 +176,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize like buttons (detailed page)
     function initLikeButtons() {
         const likeButtons = document.querySelectorAll('.like-btn, .liked');
-        console.log(`Found ${likeButtons.length} like buttons on page`);
         
         likeButtons.forEach((button, index) => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
-                console.log(`Like button ${index + 1} clicked`);
-                
                 handleLikeAction(this);
             });
         });
@@ -325,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize like links (listing pages)
     function initLikeLinks() {
         const likeLinks = document.querySelectorAll('.like-recipe-link');
-        console.log(`Found ${likeLinks.length} like links on page`);
         
         likeLinks.forEach((link, index) => {
             // Remove any existing click handlers directly from the DOM element
@@ -336,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function() {
             newLink.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation(); // Stop event bubbling
-                console.log(`Direct like link ${index + 1} clicked`);
                 
                 const icon = this.querySelector('i.fa-heart');
                 if (icon) {
@@ -457,88 +318,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Handle like action for recipe cards
-    function handleLikeAction(button) {
-        // Get the recipe ID
-        const recipeId = button.dataset.recipeId;
-        if (!recipeId) return;
-        
-        // Determine the current state
-        const isLiked = button.classList.contains('liked');
-        
-        // Toggle immediately for better UX
-        button.classList.toggle('liked');
-        
-        // Get likes count display
-        const likesCountElement = document.querySelector('.like-count');
-        let likesCount = parseInt(likesCountElement?.textContent || '0');
-        
-        // Update local storage
-        updateLikeStorage(recipeId, !isLiked);
-        
-        // Optimistically update the likes count
-        if (isLiked) {
-            if (likesCount > 0) likesCount--;
-        } else {
-            likesCount++;
-        }
-        
-        if (likesCountElement) {
-            likesCountElement.textContent = likesCount.toString();
-        }
-        
-        // Update button text
-        if (button.querySelector('.like-text')) {
-            button.querySelector('.like-text').textContent = isLiked ? 'Like' : 'Unlike';
-        }
-        
-        // Send the like request to the server
-        sendLikeRequest(recipeId, !isLiked, function(success) {
-            if (!success) {
-                // Revert the UI change if the server request failed
-                button.classList.toggle('liked');
-                
-                // Revert the count
-                if (likesCountElement) {
-                    likesCountElement.textContent = (isLiked ? likesCount + 1 : likesCount - 1).toString();
-                }
-                
-                // Revert button text
-                if (button.querySelector('.like-text')) {
-                    button.querySelector('.like-text').textContent = isLiked ? 'Unlike' : 'Like';
-                }
-                
-                // Show error notification
-                if (typeof Notify !== 'undefined' && !notificationShown) {
-                    Notify.error('Could not update like. Please try again.');
-                    notificationShown = true;
-                }
-            }
-        });
-    }
-    
-    /**
-     * Update the local storage with like status
-     * @param {string} recipeId - The recipe ID
-     * @param {boolean} isLiked - Whether the recipe is liked 
-     */
-    function updateLikeStorage(recipeId, isLiked) {
-        try {
-            const likes = JSON.parse(localStorage.getItem('recipe_likes') || '{}');
-            likes[recipeId] = isLiked;
-            localStorage.setItem('recipe_likes', JSON.stringify(likes));
-        } catch (e) {
-            // Storage might be full or disabled
-        }
-    }
-    
     /**
      * Update all like icons based on localStorage
      */
     function updateLikeIconsFromStorage() {
         try {
             const likes = JSON.parse(localStorage.getItem('recipe_likes') || '{}');
-            console.log("Updating like icons from storage, liked recipes:", Object.keys(likes).filter(id => likes[id]));
             
             // Update heart icons within .like-recipe-link elements 
             document.querySelectorAll('.like-recipe-link').forEach(link => {
@@ -592,7 +377,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (e) {
             // Storage might be disabled or corrupted
-            console.warn("Error updating like icons:", e);
         }
     }
     
@@ -638,54 +422,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('recipe_likes', JSON.stringify(likes));
             } catch (e) {
                 // Storage might be full or disabled
-                console.warn("Could not save likes to localStorage", e);
             }
         }
-    }
-    
-    // Function to find and fix any hardcoded URLs in the DOM
-    function fixHardcodedUrls() {
-        // Fix any form actions
-        document.querySelectorAll('form').forEach(form => {
-            if (form.action && form.action.includes('/like-recipe/')) {
-                console.warn(`Found form with absolute like-recipe URL: ${form.action}`);
-                form.action = getRelativeApiUrl('/recipe/like/');
-                console.log(`Fixed form action to: ${form.action}`);
-            }
-        });
-        
-        // Fix any links
-        document.querySelectorAll('a').forEach(link => {
-            if (link.href && link.href.includes('/like-recipe/')) {
-                console.warn(`Found link with absolute like-recipe URL: ${link.href}`);
-                // Extract the relative path and update
-                link.href = getRelativeApiUrl('/recipe/like/');
-                console.log(`Fixed link href to: ${link.href}`);
-            }
-        });
-        
-        // Fix any data attributes that might contain URLs
-        document.querySelectorAll('[data-url]').forEach(el => {
-            if (el.dataset.url && el.dataset.url.includes('/like-recipe/')) {
-                console.warn(`Found data-url with absolute like-recipe URL: ${el.dataset.url}`);
-                el.dataset.url = getRelativeApiUrl('/recipe/like/');
-                console.log(`Fixed data-url to: ${el.dataset.url}`);
-            }
-        });
-        
-        // Check for script tags with hardcoded URLs 
-        document.querySelectorAll('script').forEach(script => {
-            if (script.src && script.src.includes('/like-recipe/')) {
-                console.warn(`Found script with absolute like-recipe URL: ${script.src}`);
-                // We can't modify script src after loading, but we can log it
-            }
-        });
     }
     
     // Common function to send like request to server
     function sendLikeRequest(recipeId, shouldLike, callback) {
         if (!recipeId) {
-            console.error('No recipe ID provided for like request');
             callback(false);
             return;
         }
@@ -696,7 +439,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get CSRF token
         const csrfToken = getCsrfToken();
         if (!csrfToken) {
-            console.error('No CSRF token found');
+            callback(false);
+            return;
         }
         
         // Add request data
@@ -706,18 +450,9 @@ document.addEventListener('DOMContentLoaded', function() {
             'action': 'like'
         };
         
-        // The URL to fetch - MUST use relative path to work across environments
-        // Force to relative URL using helper
-        const url = getRelativeApiUrl('/recipe/like/');
-        
-        console.log(`%c SENDING LIKE REQUEST `, 'background: #FF5722; color: white; font-size: 14px; font-weight: bold;');
-        console.table({
-            'URL': url,
-            'Recipe ID': recipeId,
-            'Action': shouldLike ? 'like' : 'unlike',
-            'CSRF Token': csrfToken ? csrfToken.substring(0, 6) + '...' : 'MISSING',
-            'Site Origin': window.location.origin
-        });
+        // The URL to fetch - MUST use /recipe/like/ as configured in the Django URLs
+        // Use relative URL to avoid cross-domain issues
+        const url = '/recipe/like/';
         
         const headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -725,33 +460,24 @@ document.addEventListener('DOMContentLoaded', function() {
             'X-CSRFToken': csrfToken
         };
         
-        console.log('Request headers:');
-        console.table(headers);
-        
         const params = new URLSearchParams(requestData);
-        console.log('Request body (urlencoded):', params.toString());
         
-        // Always use relative URL with window.fetch
+        // Use try-catch to provide detailed error handling
         try {
-            window.fetch(url, {
+            fetch(url, {
                 method: 'POST',
                 headers: headers,
                 body: params,
+                // Add credentials to ensure cookies are sent
                 credentials: 'same-origin'
             })
             .then(response => {
-                console.log(`%c RESPONSE ${response.status} `, 
-                            response.ok ? 'background: #4CAF50; color: white;' : 'background: #F44336; color: white;', 
-                            response);
-                
                 if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    throw new Error(`Network response was not ok: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log(`LIKE DEBUG: Success response data:`, data);
-                
                 // Update like counts from server
                 const likesCountElements = document.querySelectorAll('.likes-count, .like-count');
                 likesCountElements.forEach(element => {
@@ -843,8 +569,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 callback(true);
             })
             .catch(error => {
-                console.error(`Like request failed: ${error.message}`);
-                
                 // Show error notification if needed
                 if (typeof Notify !== 'undefined' && !notificationShown) {
                     Notify.error('Could not update like. Please try again.');
@@ -854,8 +578,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 callback(false);
             });
         } catch (e) {
-            console.error(`Like request exception: ${e.message}`);
-            
             // Show error notification if needed
             if (typeof Notify !== 'undefined' && !notificationShown) {
                 Notify.error('Could not update like. Please try again.');
@@ -864,6 +586,81 @@ document.addEventListener('DOMContentLoaded', function() {
             
             callback(false);
         }
+    }
+    
+    /**
+     * Update the local storage with like status
+     * @param {string} recipeId - The recipe ID
+     * @param {boolean} isLiked - Whether the recipe is liked 
+     */
+    function updateLikeStorage(recipeId, isLiked) {
+        try {
+            const likes = JSON.parse(localStorage.getItem('recipe_likes') || '{}');
+            likes[recipeId] = isLiked;
+            localStorage.setItem('recipe_likes', JSON.stringify(likes));
+        } catch (e) {
+            // Storage might be full or disabled
+        }
+    }
+    
+    // Handle like action for recipe cards
+    function handleLikeAction(button) {
+        // Get the recipe ID
+        const recipeId = button.dataset.recipeId;
+        if (!recipeId) return;
+        
+        // Determine the current state
+        const isLiked = button.classList.contains('liked');
+        
+        // Toggle immediately for better UX
+        button.classList.toggle('liked');
+        
+        // Get likes count display
+        const likesCountElement = document.querySelector('.like-count');
+        let likesCount = parseInt(likesCountElement?.textContent || '0');
+        
+        // Update local storage
+        updateLikeStorage(recipeId, !isLiked);
+        
+        // Optimistically update the likes count
+        if (isLiked) {
+            if (likesCount > 0) likesCount--;
+        } else {
+            likesCount++;
+        }
+        
+        if (likesCountElement) {
+            likesCountElement.textContent = likesCount.toString();
+        }
+        
+        // Update button text
+        if (button.querySelector('.like-text')) {
+            button.querySelector('.like-text').textContent = isLiked ? 'Like' : 'Unlike';
+        }
+        
+        // Send the like request to the server
+        sendLikeRequest(recipeId, !isLiked, function(success) {
+            if (!success) {
+                // Revert the UI change if the server request failed
+                button.classList.toggle('liked');
+                
+                // Revert the count
+                if (likesCountElement) {
+                    likesCountElement.textContent = (isLiked ? likesCount + 1 : likesCount - 1).toString();
+                }
+                
+                // Revert button text
+                if (button.querySelector('.like-text')) {
+                    button.querySelector('.like-text').textContent = isLiked ? 'Unlike' : 'Like';
+                }
+                
+                // Show error notification
+                if (typeof Notify !== 'undefined' && !notificationShown) {
+                    Notify.error('Could not update like. Please try again.');
+                    notificationShown = true;
+                }
+            }
+        });
     }
     
     // Expose the handler for other modules
