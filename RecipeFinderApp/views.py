@@ -959,3 +959,33 @@ def collection_share(request, pk):
     }
     
     return render(request, 'recipe_finder/collection_share.html', context)
+
+@login_required
+def add_comment(request, recipe_id):
+    if request.method == 'POST':
+        try:
+            recipe = Recipe.objects.get(id=recipe_id)
+            comment_text = request.POST.get('comment_text')
+            
+            if not comment_text:
+                return JsonResponse({'success': False, 'message': 'Comment text is required'}, status=400)
+                
+            comment = Comment.objects.create(
+                recipe=recipe,
+                user=request.user,
+                text=comment_text
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'comment_id': comment.id,
+                'user': comment.user.username,
+                'text': comment.text,
+                'created_at': comment.created_at.strftime('%B %d, %Y, %I:%M %p')
+            })
+        except Recipe.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Recipe not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+    return JsonResponse({'success': False, 'message': 'Only POST requests are allowed'}, status=405)

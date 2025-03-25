@@ -22,6 +22,7 @@ urlpatterns = [
     path('recipe/<slug:slug>/delete/', views.recipe_delete, name='recipe_delete'),
     path('recipe/like/', views.like_recipe, name='like_recipe'),
     path('recipe/<slug:slug>/', views.recipe_detail, name='recipe_detail'),
+    path('recipe/<int:recipe_id>/comment/', views.add_comment, name='add_comment'),
     path('recipes/', views.recipe_list, name='recipe_list'),
 
     # AJAX endpoints
