@@ -1,0 +1,56 @@
+// ...existing code...
+
+/* Styling for the heart icon */
+.fa-heart {
+  cursor: pointer;
+  transition: color 0.3s ease;
+  color: #ccc;
+}
+
+.fa-heart.active {
+  color: #e74c3c;
+}
+
+.recipe-card .fa-heart {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 1.5rem;
+  z-index: 10;
+}
+
+/* Make sure the heart is clickable and doesn't interfere with card clicks */
+.recipe-card .fa-heart:hover {
+  transform: scale(1.2);
+}
+
+/* Delete button styling */
+.recipe-actions {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn-danger {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-danger:hover {
+  background-color: #c0392b;
+}
+
+.btn-danger i {
+  font-size: 14px;
+}
+
+// ...existing code...

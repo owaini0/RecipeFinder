@@ -1081,6 +1081,7 @@ ul {
 }
 
 .difficulty-badge {
+    background-color: #000000;
     color: white;
     padding: 3px 8px;
     border-radius: 12px;
