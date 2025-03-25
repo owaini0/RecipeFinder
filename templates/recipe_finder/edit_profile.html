@@ -1,43 +1,7 @@
 {% extends 'recipe_finder/base.html' %}
 
 {% block main_styles %}
-<style>
-    /* Inline styles to ensure modal visibility */
-    .verification-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .verification-modal.show {
-        opacity: 1 !important;
-        visibility: visible !important;
-        display: flex !important;
-    }
-
-    /* Additional styles for certificate upload */
-    #modal-certificate-upload {
-        cursor: pointer;
-    }
-
-    #modal-certificate-preview {
-        display: none;
-    }
-
-    #modal-certificate-preview.show {
-        display: flex;
-    }
-</style>
+<!-- All styles moved to main.css file -->
 {% endblock %}
 
 {% block content %}
@@ -209,12 +173,12 @@
 </div>
 
 <!-- Chef Verification Modal -->
-<div id="verification-modal" class="verification-modal">
+<div id="verification-modal" class="verification-modal" aria-hidden="true" role="dialog" aria-labelledby="modalTitle">
     <div class="verification-modal-content">
-        <button class="verification-modal-close" onclick="closeVerificationModal()">&times;</button>
+        <button class="verification-modal-close" onclick="closeVerificationModal()" aria-label="Close">&times;</button>
         
         <div class="verification-modal-header">
-            <h2>Chef Verification</h2>
+            <h2 id="modalTitle">Chef Verification</h2>
             <p>Please provide your professional credentials to get verified as a professional chef. Our team will review your application.</p>
         </div>
         
@@ -223,12 +187,12 @@
             <input type="hidden" name="user_id" value="{{ user.id }}">
             
             <div class="form-group">
-                <label for="full_name">Full Name*</label>
+                <label for="full_name">Full Name</label>
                 <input type="text" id="full_name" name="full_name" required value="{{ profile.full_name|default:'' }}" placeholder="Your full professional name">
             </div>
             
             <div class="form-group">
-                <label for="current_position">Current Position*</label>
+                <label for="current_position">Current Position</label>
                 <input type="text" id="current_position" name="current_position" required placeholder="Head Chef, Sous Chef, etc.">
             </div>
             
@@ -238,18 +202,17 @@
             </div>
             
             <div class="form-group">
-                <label for="modal_certificate_file">Professional Certificate*</label>
-                <label class="certificate-upload" for="modal_certificate_file">
+                <label for="modal_certificate_file">Professional Certificate</label>
+                <label class="certificate-upload" for="modal_certificate_file" id="modal-certificate-upload" tabindex="0">
                     <i class="fas fa-file-upload"></i>
                     <p>Upload your certificate or credentials</p>
                     <small>Accepted formats: PDF, JPG, PNG (max 5MB)</small>
                 </label>
                 <input type="file" id="modal_certificate_file" name="certificate_file" accept=".pdf,.jpg,.jpeg,.png" 
-                       style="display: none;" 
                        required onchange="handleCertificateFileChange(this)">
                 <div id="modal-certificate-preview" class="certificate-preview">
                     <span id="modal-certificate-name"></span>
-                    <button type="button" id="modal-remove-certificate" onclick="removeCertificateFile()"><i class="fas fa-times"></i></button>
+                    <button type="button" id="modal-remove-certificate" onclick="removeCertificateFile()" aria-label="Remove file"><i class="fas fa-times"></i></button>
                 </div>
             </div>
             
@@ -260,7 +223,7 @@
             
             <div class="verification-form-actions">
                 <button type="button" id="cancel-verification" class="btn-cancel" onclick="closeVerificationModal()">Cancel</button>
-                <button type="submit" class="btn-submit">Submit Application</button>
+                <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> Submit Application</button>
             </div>
         </form>
     </div>
@@ -483,19 +446,25 @@ function openVerificationModal() {
         
         if (modal) {
             modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
 
             setTimeout(function() {
                 try {
-                    modal.style.opacity = '1';
-                    modal.style.visibility = 'visible';
                     modal.classList.add('show');
-
                 } catch (err) {
                     console.error('Error in modal setup:', err);
                 }
             }, 10);
             
             document.body.style.overflow = 'hidden';
+            
+            // Focus the first field for accessibility
+            const firstInput = modal.querySelector('input[type="text"]');
+            if (firstInput) {
+                setTimeout(function() {
+                    firstInput.focus();
+                }, 300);
+            }
         } else {
             console.error('Verification modal not found!');
         }
@@ -505,18 +474,22 @@ function openVerificationModal() {
 }
 
 function closeVerificationModal() {
-    console.log('Closing verification modal');
     var modal = document.getElementById('verification-modal');
     if (modal) {
-        modal.style.opacity = '0';
-        modal.style.visibility = 'hidden';
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        
         setTimeout(function() {
-            modal.classList.remove('show');
-            if (!modal.classList.contains('show')) {
-                modal.style.display = 'none';
-            }
+            modal.style.display = 'none';
         }, 300);
+        
         document.body.style.overflow = '';
+        
+        // Return focus to the button that opened the modal
+        const verifyButton = document.getElementById('verify-chef-btn');
+        if (verifyButton) {
+            verifyButton.focus();
+        }
     }
 }
 
