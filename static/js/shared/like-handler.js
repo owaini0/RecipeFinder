@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Flag to prevent duplicate notifications
     let notificationShown = false;
     
+    // Initialize the local storage from the initial page load
+    initLikeStorageFromHTML();
+    
     // Initialize like buttons and links
     initLikeButtons();
     initLikeLinks();
@@ -19,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     document.addEventListener('click', function(e) {
         // Handle heart icon clicks in recipe cards
-        if (e.target && e.target.classList.contains('recipe-like-icon')) {
+        if (e.target && (e.target.classList.contains('recipe-like-icon') || e.target.classList.contains('fa-heart'))) {
             e.preventDefault();
             handleLikeLinkAction(e.target);
         }
@@ -93,29 +96,74 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle like action for recipe cards
     function handleLikeLinkAction(linkElement) {
-        // Get the recipe card container
-        const card = linkElement.closest('.recipe-card');
-        if (!card) return;
+        // Get the recipe ID - check if the element itself has it or if parent does
+        let recipeId;
+        let parentLink;
         
-        // Get the recipe ID
-        const recipeId = card.dataset.recipeId;
-        if (!recipeId) return;
+        // If clicked on icon, find the parent link with recipe ID
+        if (linkElement.classList.contains('fa-heart')) {
+            parentLink = linkElement.closest('.like-recipe-link');
+            if (parentLink) {
+                recipeId = parentLink.dataset.recipeId;
+                // Use parent link for later class manipulations
+                linkElement = parentLink.querySelector('i.fa-heart');
+            }
+        } else if (linkElement.classList.contains('like-recipe-link')) {
+            // If clicked on the link itself
+            recipeId = linkElement.dataset.recipeId;
+            // Find the icon within this link
+            linkElement = linkElement.querySelector('i.fa-heart');
+        } else if (linkElement.classList.contains('recipe-like-icon')) {
+            // Original case - recipe-like-icon
+            const card = linkElement.closest('.recipe-card');
+            if (card) {
+                recipeId = card.dataset.recipeId;
+            }
+        }
         
-        // Determine the current state
-        const isLiked = linkElement.classList.contains('fas');
+        if (!recipeId || !linkElement) return;
+        
+        // Determine the current state (check for both fas and fa-solid classes)
+        const isLiked = linkElement.classList.contains('fas') || linkElement.classList.contains('fa-solid');
         
         // Toggle immediately for better UX
         if (isLiked) {
-            linkElement.classList.replace('fas', 'far');
+            // For FontAwesome 5+
+            if (linkElement.classList.contains('fas')) {
+                linkElement.classList.replace('fas', 'far');
+            }
+            // For FontAwesome 6 (if used)
+            if (linkElement.classList.contains('fa-solid')) {
+                linkElement.classList.remove('fa-solid');
+                linkElement.classList.add('fa-regular');
+            }
         } else {
-            linkElement.classList.replace('far', 'fas');
+            // For FontAwesome 5+
+            if (linkElement.classList.contains('far')) {
+                linkElement.classList.replace('far', 'fas');
+            }
+            // For FontAwesome 6 (if used)
+            if (linkElement.classList.contains('fa-regular')) {
+                linkElement.classList.remove('fa-regular');
+                linkElement.classList.add('fa-solid');
+            }
         }
         
         // Update local storage
         updateLikeStorage(recipeId, !isLiked);
         
-        // Get likes count display
-        const likesCountElement = card.querySelector('.likes-count');
+        // Get likes count display - it might be a sibling element to the heart icon
+        let likesCountElement;
+        if (parentLink) {
+            likesCountElement = parentLink.querySelector('.like-count, .likes-count');
+        } else {
+            // Try to find the count near the card
+            const card = linkElement.closest('.recipe-card');
+            if (card) {
+                likesCountElement = card.querySelector('.like-count, .likes-count');
+            }
+        }
+        
         let likesCount = parseInt(likesCountElement?.textContent || '0');
         
         // Optimistically update the likes count
@@ -239,9 +287,18 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.recipe-card').forEach(card => {
                 const recipeId = card.dataset.recipeId;
                 if (recipeId && likes[recipeId]) {
-                    const icon = card.querySelector('.recipe-like-icon');
-                    if (icon && icon.classList.contains('far')) {
-                        icon.classList.replace('far', 'fas');
+                    // Try both classes of icons
+                    const icon = card.querySelector('.recipe-like-icon, .fa-heart');
+                    if (icon) {
+                        // Handle FontAwesome 5
+                        if (icon.classList.contains('far')) {
+                            icon.classList.replace('far', 'fas');
+                        }
+                        // Handle FontAwesome 6 (if used)
+                        if (icon.classList.contains('fa-regular')) {
+                            icon.classList.remove('fa-regular');
+                            icon.classList.add('fa-solid');
+                        }
                     }
                 }
             });
@@ -259,6 +316,53 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (e) {
             // Storage might be disabled or corrupted
+        }
+    }
+    
+    /**
+     * Initialize local storage from the HTML state
+     * This ensures local storage reflects server/database state on page load
+     */
+    function initLikeStorageFromHTML() {
+        const likes = JSON.parse(localStorage.getItem('recipe_likes') || '{}');
+        let hasChanges = false;
+        
+        // Check recipe cards with the likes icon
+        document.querySelectorAll('.like-recipe-link').forEach(link => {
+            const recipeId = link.dataset.recipeId;
+            if (!recipeId) return;
+            
+            const icon = link.querySelector('i.fa-heart');
+            if (icon) {
+                const isLiked = icon.classList.contains('fas') || icon.classList.contains('fa-solid');
+                if (likes[recipeId] !== isLiked) {
+                    likes[recipeId] = isLiked;
+                    hasChanges = true;
+                }
+            }
+        });
+        
+        // Also check detail page like button
+        const detailLikeButton = document.querySelector('.like-button');
+        if (detailLikeButton) {
+            const recipeId = detailLikeButton.dataset.recipeId;
+            if (recipeId) {
+                const isLiked = detailLikeButton.classList.contains('liked');
+                if (likes[recipeId] !== isLiked) {
+                    likes[recipeId] = isLiked;
+                    hasChanges = true;
+                }
+            }
+        }
+        
+        // Save changes to localStorage if needed
+        if (hasChanges) {
+            try {
+                localStorage.setItem('recipe_likes', JSON.stringify(likes));
+            } catch (e) {
+                // Storage might be full or disabled
+                console.warn("Could not save likes to localStorage", e);
+            }
         }
     }
     
@@ -282,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'action': 'like'
         };
         
-        fetch('/like-recipe/', {
+        fetch('/recipe/like/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -301,21 +405,70 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update like counts from server
             const likesCountElements = document.querySelectorAll('.likes-count, .like-count');
             likesCountElements.forEach(element => {
-                element.textContent = data.likes_count.toString();
+                if (element.closest('.like-recipe-link')?.dataset.recipeId === recipeId || 
+                    element.closest('.recipe-card')?.dataset.recipeId === recipeId) {
+                    element.textContent = data.likes_count.toString();
+                }
             });
             
             // Update local storage with server response
             updateLikeStorage(recipeId, data.liked);
             
-            // Update all icons and buttons
-            document.querySelectorAll('.recipe-card').forEach(card => {
-                if (card.dataset.recipeId === recipeId) {
-                    const icon = card.querySelector('.recipe-like-icon');
+            // Update all like links for this recipe
+            document.querySelectorAll('.like-recipe-link').forEach(link => {
+                if (link.dataset.recipeId === recipeId) {
+                    const icon = link.querySelector('i.fa-heart');
                     if (icon) {
                         if (data.liked) {
-                            icon.classList.replace('far', 'fas');
+                            // Handle FontAwesome 5
+                            if (icon.classList.contains('far')) {
+                                icon.classList.replace('far', 'fas');
+                            }
+                            // Handle FontAwesome 6 (if used)
+                            if (icon.classList.contains('fa-regular')) {
+                                icon.classList.remove('fa-regular');
+                                icon.classList.add('fa-solid');
+                            }
                         } else {
-                            icon.classList.replace('fas', 'far');
+                            // Handle FontAwesome 5
+                            if (icon.classList.contains('fas')) {
+                                icon.classList.replace('fas', 'far');
+                            }
+                            // Handle FontAwesome 6 (if used)
+                            if (icon.classList.contains('fa-solid')) {
+                                icon.classList.remove('fa-solid');
+                                icon.classList.add('fa-regular');
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Also check for recipe cards with data-recipe-id attribute (legacy support)
+            document.querySelectorAll('.recipe-card').forEach(card => {
+                if (card.dataset.recipeId === recipeId) {
+                    const icon = card.querySelector('.recipe-like-icon, .fa-heart');
+                    if (icon) {
+                        if (data.liked) {
+                            // Handle FontAwesome 5
+                            if (icon.classList.contains('far')) {
+                                icon.classList.replace('far', 'fas');
+                            }
+                            // Handle FontAwesome 6 (if used)
+                            if (icon.classList.contains('fa-regular')) {
+                                icon.classList.remove('fa-regular');
+                                icon.classList.add('fa-solid');
+                            }
+                        } else {
+                            // Handle FontAwesome 5
+                            if (icon.classList.contains('fas')) {
+                                icon.classList.replace('fas', 'far');
+                            }
+                            // Handle FontAwesome 6 (if used)
+                            if (icon.classList.contains('fa-solid')) {
+                                icon.classList.remove('fa-solid');
+                                icon.classList.add('fa-regular');
+                            }
                         }
                     }
                 }
