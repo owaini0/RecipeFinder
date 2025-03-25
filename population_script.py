@@ -17,6 +17,8 @@ from django.utils.text import slugify
 from django.core.files import File
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.db.utils import OperationalError, ProgrammingError
+from django.core.management import call_command
 from RecipeFinderApp.models import (
     UserProfile, Category, Recipe, RecipeImage, 
     RecipeVideo, Like, Comment, Follow, Collection, 
@@ -27,16 +29,40 @@ from RecipeFinderApp.tests import add_images_to_recipes
 def clear_data():
     """Clear existing data before populating"""
     print("Clearing existing data...")
-    Comment.objects.all().delete()
-    Like.objects.all().delete()
-    RecipeImage.objects.all().delete()
-    RecipeVideo.objects.all().delete()
-    Recipe.objects.all().delete()
-    Collection.objects.all().delete()
-    Follow.objects.all().delete()
-    ChefVerification.objects.all().delete()
-    Category.objects.all().delete()
-    User.objects.filter(is_superuser=False).delete()
+    
+    # Check if migrations need to be run
+    try:
+        print("Making sure migrations are applied...")
+        call_command('migrate', interactive=False)
+    except Exception as e:
+        print(f"Warning: Error applying migrations: {e}")
+    
+    # Try to delete data from each model, gracefully handling errors
+    models_to_clear = [
+        (Comment, "comments"),
+        (Like, "likes"),
+        (RecipeImage, "recipe images"),
+        (RecipeVideo, "recipe videos"),
+        (Recipe, "recipes"),
+        (Collection, "collections"),
+        (Follow, "follows"),
+        (ChefVerification, "chef verifications"),
+        (Category, "categories")
+    ]
+    
+    for model, name in models_to_clear:
+        try:
+            deleted = model.objects.all().delete()
+            print(f"Cleared {name}")
+        except (OperationalError, ProgrammingError) as e:
+            print(f"Warning: Could not clear {name} - table may not exist yet. Error: {e}")
+    
+    try:
+        # Only delete non-superuser accounts
+        User.objects.filter(is_superuser=False).delete()
+        print("Cleared regular users")
+    except (OperationalError, ProgrammingError) as e:
+        print(f"Warning: Could not clear users - table may not exist yet. Error: {e}")
     
     print("Data cleared.")
 
@@ -269,6 +295,7 @@ def create_likes_and_comments(users, recipes):
     likes_count = 0
     comments_count = 0
     
+    # More varied and realistic comment texts
     comment_texts = [
         "Delicious recipe! I made this last night and my family loved it.",
         "Great flavors, but I added a bit more salt than specified.",
@@ -279,7 +306,30 @@ def create_likes_and_comments(users, recipes):
         "Perfect weekend cooking project. Worth the effort.",
         "I've been looking for a recipe like this for ages. Thank you!",
         "The flavors in this are incredible. Restaurant quality for sure.",
-        "Made this for a dinner party and everyone asked for the recipe!"
+        "Made this for a dinner party and everyone asked for the recipe!",
+        "I tried this with gluten-free flour and it turned out great!",
+        "My kids are usually picky eaters but they devoured this!",
+        "Do you think this would work in an Instant Pot? Might try that next time.",
+        "I added some red pepper flakes for a bit of heat - highly recommend!",
+        "This recipe reminds me of my grandmother's cooking. So nostalgic!",
+        "I was intimidated by the instructions but it was actually quite simple to make.",
+        "Perfect balance of flavors! Will definitely be making again.",
+        "The leftovers were even better the next day!",
+        "This is now my go-to recipe when I want to impress guests.",
+        "I reduced the sugar by half and it was still plenty sweet for our taste."
+    ]
+    
+    # Chef-specific comments that are more technical
+    chef_comments = [
+        "Great recipe. I'd suggest blooming the spices in oil first to enhance their flavors.",
+        "Nice technique! For professional results, try cooking at a slightly lower temperature for longer.",
+        "Excellent flavor profile. I added a splash of acid at the end to brighten it up.",
+        "Good foundation recipe. In my restaurant, we finish this with a compound butter for extra richness.",
+        "Solid method. To elevate this further, try dry-brining the protein overnight before cooking.",
+        "Well-balanced dish. Consider adding textural contrast with some crispy elements on top.",
+        "I appreciate the precise temperature instructions. That's key for perfectly cooked proteins.",
+        "Nice classic approach. I use the same base but incorporate some modernist techniques for my tasting menu.",
+        "You've captured the essence of this dish well. In culinary school, we were taught a similar method."
     ]
     
     for recipe in recipes:
@@ -294,17 +344,46 @@ def create_likes_and_comments(users, recipes):
             )
             likes_count += 1
         
-        # Add 2-8 comments per recipe
-        comment_count = random.randint(2, 8)
+        # Add 3-10 comments per recipe
+        comment_count = random.randint(3, 10)
         commenting_users = random.sample(users, min(comment_count, len(users)))
         for user in commenting_users:
-            Comment.objects.create(
+            # Use chef comments for chef users
+            if hasattr(user, 'profile') and getattr(user.profile, 'is_chef', False) and random.random() > 0.5:
+                comment_text = random.choice(chef_comments)
+            else:
+                comment_text = random.choice(comment_texts)
+                
+            # Create the comment with a random timestamp after the recipe was created
+            comment = Comment.objects.create(
                 user=user,
                 recipe=recipe,
-                content=random.choice(comment_texts),
-                created_at=recipe.created_at + timedelta(days=random.randint(1, 30))
+                content=comment_text,
+                created_at=recipe.created_at + timedelta(days=random.randint(1, 30), 
+                                                        hours=random.randint(0, 23),
+                                                        minutes=random.randint(0, 59))
             )
             comments_count += 1
+            
+            # Occasionally have the recipe author reply to comments
+            if random.random() > 0.7:  # 30% chance
+                reply_texts = [
+                    f"Thanks for trying my recipe, {user.username}! Glad you enjoyed it.",
+                    f"Thank you for the feedback! I'll try your suggestion next time.",
+                    f"I'm so happy it turned out well for you!",
+                    f"Great idea with the substitution! I'll have to try that.",
+                    f"I appreciate you taking the time to comment! Happy cooking!"
+                ]
+                
+                # Create the author's reply
+                Comment.objects.create(
+                    user=recipe.author,
+                    recipe=recipe,
+                    content=random.choice(reply_texts),
+                    created_at=comment.created_at + timedelta(days=random.randint(0, 3), 
+                                                            hours=random.randint(1, 12))
+                )
+                comments_count += 1
     
     print(f"Created {likes_count} likes and {comments_count} comments")
 
