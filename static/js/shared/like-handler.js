@@ -1,21 +1,53 @@
-/**
- * Recipe Like Handler
- * Handles the like/unlike functionality for recipes
- */
-
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Like handler initialized");
     
-    // Add fetch API interception for compatibility
+    // Add a site-wide variable to store the current base URL
+    window.RECIPE_FINDER_BASE_URL = window.location.origin;
+    
+    // Override XMLHttpRequest for legacy code that might use it
+    const originalXHROpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+        // If this is a request to the old endpoint, fix it
+        if (typeof url === 'string' && 
+            (url.includes('/like-recipe/') || url.match(/https?:\/\/[^\/]+\/like-recipe\//))) {
+            
+            console.warn('Intercepted XMLHttpRequest to deprecated like-recipe URL, redirecting to recipe/like/');
+            
+            if (url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
+                url = url.replace(/\/like-recipe\//, '/recipe/like/');
+            } else {
+                url = url.replace('/like-recipe/', '/recipe/like/');
+            }
+            
+            console.log('XMLHttpRequest redirected to:', url);
+        }
+        
+        // Call the original method with possibly modified URL
+        return originalXHROpen.call(this, method, url, async, user, password);
+    };
+    
     const originalFetch = window.fetch;
     window.fetch = function(input, init) {
-        // Convert input to string if it's a Request object
         const url = typeof input === 'string' ? input : input.url;
         
-        // Check if it's a request to the old URL and redirect
-        if (url === '/like-recipe/' || url.startsWith('/like-recipe/?')) {
-            console.warn('Intercepted request to deprecated /like-recipe/ URL, redirecting to /recipe/like/');
-            const newUrl = url.replace('/like-recipe/', '/recipe/like/');
+        if (url === '/like-recipe/' || 
+            url.startsWith('/like-recipe/?') || 
+            url.includes('/like-recipe/') || 
+            url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
+            
+            console.warn('Intercepted request to deprecated like-recipe URL, redirecting to /recipe/like/');
+            let newUrl;
+            
+            // Handle both absolute and relative URLs
+            if (url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
+                // Absolute URL - replace the path part
+                newUrl = url.replace(/\/like-recipe\//, '/recipe/like/');
+            } else {
+                // Relative URL
+                newUrl = url.replace('/like-recipe/', '/recipe/like/');
+            }
+            
+            console.log('Redirecting request from', url, 'to', newUrl);
             
             // If input is a Request object, create a new one with the updated URL
             if (typeof input !== 'string') {
@@ -42,11 +74,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Check if settings is an object
-            if (settings && typeof settings === 'object') {
-                // Check if URL is the old path and update it
-                if (settings.url === '/like-recipe/' || (settings.url && settings.url.startsWith('/like-recipe/?'))) {
-                    console.warn('Intercepted jQuery ajax request to deprecated /like-recipe/ URL, redirecting to /recipe/like/');
-                    settings.url = settings.url.replace('/like-recipe/', '/recipe/like/');
+            if (settings && typeof settings === 'object' && settings.url) {
+                // Check for both relative and absolute URLs
+                if (settings.url === '/like-recipe/' || 
+                    settings.url.startsWith('/like-recipe/?') || 
+                    settings.url.includes('/like-recipe/') ||
+                    settings.url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
+                    
+                    console.warn('Intercepted jQuery ajax request to deprecated like-recipe URL, redirecting to recipe/like/');
+                    
+                    // Handle both absolute and relative URLs
+                    if (settings.url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
+                        settings.url = settings.url.replace(/\/like-recipe\//, '/recipe/like/');
+                    } else {
+                        settings.url = settings.url.replace('/like-recipe/', '/recipe/like/');
+                    }
+                    
+                    console.log('Redirected Ajax URL to:', settings.url);
                 }
             }
             
@@ -508,6 +552,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         // The URL to fetch - MUST use /recipe/like/ as configured in the Django URLs
+        // Use relative URL to avoid cross-domain issues
         const url = '/recipe/like/';
         
         console.log(`%c LIKE REQUEST `, 'background: #4CAF50; color: white; font-size: 14px; font-weight: bold;');
@@ -515,7 +560,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'URL': url,
             'Recipe ID': recipeId,
             'Action': shouldLike ? 'like' : 'unlike',
-            'CSRF Token': csrfToken ? csrfToken.substring(0, 6) + '...' : 'MISSING'
+            'CSRF Token': csrfToken ? csrfToken.substring(0, 6) + '...' : 'MISSING',
+            'Site Origin': window.location.origin
         });
         
         const headers = {
@@ -530,116 +576,131 @@ document.addEventListener('DOMContentLoaded', function() {
         const params = new URLSearchParams(requestData);
         console.log('Request body (urlencoded):', params.toString());
         
-        fetch(url, {
-            method: 'POST',
-            headers: headers,
-            body: params
-        })
-        .then(response => {
-            console.log(`%c RESPONSE ${response.status} `, 
-                        response.ok ? 'background: #4CAF50; color: white;' : 'background: #F44336; color: white;', 
-                        response);
-            
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log(`LIKE DEBUG: Success response data:`, data);
-            
-            // Update like counts from server
-            const likesCountElements = document.querySelectorAll('.likes-count, .like-count');
-            likesCountElements.forEach(element => {
-                if (element.closest('.like-recipe-link')?.dataset.recipeId === recipeId || 
-                    element.closest('.recipe-card')?.dataset.recipeId === recipeId) {
-                    element.textContent = data.likes_count.toString();
+        // Use try-catch to provide detailed error handling
+        try {
+            fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: params,
+                // Add credentials to ensure cookies are sent
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log(`%c RESPONSE ${response.status} `, 
+                            response.ok ? 'background: #4CAF50; color: white;' : 'background: #F44336; color: white;', 
+                            response);
+                
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
                 }
-            });
-            
-            // Update local storage with server response
-            updateLikeStorage(recipeId, data.liked);
-            
-            // Update all like links for this recipe
-            document.querySelectorAll('.like-recipe-link').forEach(link => {
-                if (link.dataset.recipeId === recipeId) {
-                    const icon = link.querySelector('i.fa-heart');
-                    if (icon) {
-                        if (data.liked) {
-                            // Handle FontAwesome 5
-                            if (icon.classList.contains('far')) {
-                                icon.classList.replace('far', 'fas');
-                            }
-                            // Handle FontAwesome 6 (if used)
-                            if (icon.classList.contains('fa-regular')) {
-                                icon.classList.remove('fa-regular');
-                                icon.classList.add('fa-solid');
-                            }
-                        } else {
-                            // Handle FontAwesome 5
-                            if (icon.classList.contains('fas')) {
-                                icon.classList.replace('fas', 'far');
-                            }
-                            // Handle FontAwesome 6 (if used)
-                            if (icon.classList.contains('fa-solid')) {
-                                icon.classList.remove('fa-solid');
-                                icon.classList.add('fa-regular');
+                return response.json();
+            })
+            .then(data => {
+                console.log(`LIKE DEBUG: Success response data:`, data);
+                
+                // Update like counts from server
+                const likesCountElements = document.querySelectorAll('.likes-count, .like-count');
+                likesCountElements.forEach(element => {
+                    if (element.closest('.like-recipe-link')?.dataset.recipeId === recipeId || 
+                        element.closest('.recipe-card')?.dataset.recipeId === recipeId) {
+                        element.textContent = data.likes_count.toString();
+                    }
+                });
+                
+                // Update local storage with server response
+                updateLikeStorage(recipeId, data.liked);
+                
+                // Update all like links for this recipe
+                document.querySelectorAll('.like-recipe-link').forEach(link => {
+                    if (link.dataset.recipeId === recipeId) {
+                        const icon = link.querySelector('i.fa-heart');
+                        if (icon) {
+                            if (data.liked) {
+                                // Handle FontAwesome 5
+                                if (icon.classList.contains('far')) {
+                                    icon.classList.replace('far', 'fas');
+                                }
+                                // Handle FontAwesome 6 (if used)
+                                if (icon.classList.contains('fa-regular')) {
+                                    icon.classList.remove('fa-regular');
+                                    icon.classList.add('fa-solid');
+                                }
+                            } else {
+                                // Handle FontAwesome 5
+                                if (icon.classList.contains('fas')) {
+                                    icon.classList.replace('fas', 'far');
+                                }
+                                // Handle FontAwesome 6 (if used)
+                                if (icon.classList.contains('fa-solid')) {
+                                    icon.classList.remove('fa-solid');
+                                    icon.classList.add('fa-regular');
+                                }
                             }
                         }
                     }
-                }
-            });
-            
-            // Also check for recipe cards with data-recipe-id attribute (legacy support)
-            document.querySelectorAll('.recipe-card').forEach(card => {
-                if (card.dataset.recipeId === recipeId) {
-                    const icon = card.querySelector('.recipe-like-icon, .fa-heart');
-                    if (icon) {
-                        if (data.liked) {
-                            // Handle FontAwesome 5
-                            if (icon.classList.contains('far')) {
-                                icon.classList.replace('far', 'fas');
-                            }
-                            // Handle FontAwesome 6 (if used)
-                            if (icon.classList.contains('fa-regular')) {
-                                icon.classList.remove('fa-regular');
-                                icon.classList.add('fa-solid');
-                            }
-                        } else {
-                            // Handle FontAwesome 5
-                            if (icon.classList.contains('fas')) {
-                                icon.classList.replace('fas', 'far');
-                            }
-                            // Handle FontAwesome 6 (if used)
-                            if (icon.classList.contains('fa-solid')) {
-                                icon.classList.remove('fa-solid');
-                                icon.classList.add('fa-regular');
+                });
+                
+                // Also check for recipe cards with data-recipe-id attribute (legacy support)
+                document.querySelectorAll('.recipe-card').forEach(card => {
+                    if (card.dataset.recipeId === recipeId) {
+                        const icon = card.querySelector('.recipe-like-icon, .fa-heart');
+                        if (icon) {
+                            if (data.liked) {
+                                // Handle FontAwesome 5
+                                if (icon.classList.contains('far')) {
+                                    icon.classList.replace('far', 'fas');
+                                }
+                                // Handle FontAwesome 6 (if used)
+                                if (icon.classList.contains('fa-regular')) {
+                                    icon.classList.remove('fa-regular');
+                                    icon.classList.add('fa-solid');
+                                }
+                            } else {
+                                // Handle FontAwesome 5
+                                if (icon.classList.contains('fas')) {
+                                    icon.classList.replace('fas', 'far');
+                                }
+                                // Handle FontAwesome 6 (if used)
+                                if (icon.classList.contains('fa-solid')) {
+                                    icon.classList.remove('fa-solid');
+                                    icon.classList.add('fa-regular');
+                                }
                             }
                         }
                     }
+                });
+                
+                // Update the like button on detail page
+                const detailLikeButton = document.querySelector('.like-button');
+                if (detailLikeButton && detailLikeButton.dataset.recipeId === recipeId) {
+                    if (data.liked) {
+                        detailLikeButton.classList.add('liked');
+                        if (detailLikeButton.querySelector('.like-text')) {
+                            detailLikeButton.querySelector('.like-text').textContent = 'Unlike';
+                        }
+                    } else {
+                        detailLikeButton.classList.remove('liked');
+                        if (detailLikeButton.querySelector('.like-text')) {
+                            detailLikeButton.querySelector('.like-text').textContent = 'Like';
+                        }
+                    }
                 }
+                
+                callback(true);
+            })
+            .catch(error => {
+                console.error(`Like request failed: ${error.message}`);
+                
+                // Show error notification if needed
+                if (typeof Notify !== 'undefined' && !notificationShown) {
+                    Notify.error('Could not update like. Please try again.');
+                    notificationShown = true;
+                }
+                
+                callback(false);
             });
-            
-            // Update the like button on detail page
-            const detailLikeButton = document.querySelector('.like-button');
-            if (detailLikeButton && detailLikeButton.dataset.recipeId === recipeId) {
-                if (data.liked) {
-                    detailLikeButton.classList.add('liked');
-                    if (detailLikeButton.querySelector('.like-text')) {
-                        detailLikeButton.querySelector('.like-text').textContent = 'Unlike';
-                    }
-                } else {
-                    detailLikeButton.classList.remove('liked');
-                    if (detailLikeButton.querySelector('.like-text')) {
-                        detailLikeButton.querySelector('.like-text').textContent = 'Like';
-                    }
-                }
-            }
-            
-            callback(true);
-        })
-        .catch(error => {
-            console.error(`Like request failed: ${error.message}`);
+        } catch (e) {
+            console.error(`Like request exception: ${e.message}`);
             
             // Show error notification if needed
             if (typeof Notify !== 'undefined' && !notificationShown) {
@@ -648,7 +709,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             callback(false);
-        });
+        }
     }
     
     // Expose the handler for other modules
