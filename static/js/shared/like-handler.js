@@ -1,8 +1,108 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Like handler initialized");
     
+    // Emergency fix for PythonAnywhere issue - check if we're on the right domain
+    if (window.location.hostname.includes('pythonanywhere.com')) {
+        console.log(`%c PYTHONANYWHERE DETECTED `, 'background: #E91E63; color: white; font-size: 16px; font-weight: bold;');
+        
+        // Add a wrapper that will intercept any URLs with the full domain
+        // This is a last-resort defense against hardcoded URLs
+        const wrapperScript = document.createElement('script');
+        wrapperScript.textContent = `
+            // Create a direct global property to force the correct API URL
+            Object.defineProperty(window, '__recipe_like_url__', {
+                value: '/recipe/like/',
+                writable: false,
+                configurable: false
+            });
+            
+            // Final catch-all - replace any global reference to the old URL
+            window.addEventListener('load', function() {
+                console.log("Running final URL cleanup");
+                
+                // Force immediate regex replacements in any script elements
+                const scripts = document.querySelectorAll('script:not([src])');
+                for (let i = 0; i < scripts.length; i++) {
+                    if (scripts[i].textContent.includes('/like-recipe/')) {
+                        console.warn("Found script with hardcoded like-recipe URL!");
+                    }
+                }
+                
+                // Last-resort function to intercept any requests at the network level
+                (function(open) {
+                    XMLHttpRequest.prototype.open = function() {
+                        if (arguments[1] && 
+                            typeof arguments[1] === 'string' && 
+                            arguments[1].includes('like-recipe')) {
+                            
+                            console.warn('Final intercept of XMLHttpRequest to: ' + arguments[1]);
+                            arguments[1] = '/recipe/like/';
+                        }
+                        open.apply(this, arguments);
+                    };
+                })(XMLHttpRequest.prototype.open);
+            });
+        `;
+        document.head.appendChild(wrapperScript);
+    }
+    
+    // Global error handler to catch any network errors and log detailed information
+    window.addEventListener('error', function(e) {
+        if (e && e.target && e.target.tagName === 'SCRIPT') {
+            console.error('Script loading error:', e);
+        }
+        
+        if (e && e.message && e.message.includes('like-recipe')) {
+            console.error('Caught like-recipe related error:', e.message);
+            // Show user-friendly error message
+            if (typeof Notify !== 'undefined') {
+                Notify.error('Like feature error detected. Please refresh the page.');
+            }
+        }
+    });
+    
+    // Special handler for fetch errors
+    window.addEventListener('unhandledrejection', function(e) {
+        if (e && e.reason && (e.reason.message || '').includes('like-recipe')) {
+            console.error('Caught unhandled promise rejection with like-recipe:', e.reason);
+            // Show user-friendly error message 
+            if (typeof Notify !== 'undefined') {
+                Notify.error('Like feature error detected. Please refresh the page.');
+            }
+        }
+    });
+    
     // Add a site-wide variable to store the current base URL
     window.RECIPE_FINDER_BASE_URL = window.location.origin;
+    
+    // Helper function to ensure we only use relative URLs for API calls
+    function getRelativeApiUrl(endpoint) {
+        // Always force a relative URL by removing any domain prefix
+        if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+            // Extract just the path portion of the URL
+            try {
+                const url = new URL(endpoint);
+                console.warn(`Converting absolute URL ${endpoint} to relative path ${url.pathname}`);
+                return url.pathname;
+            } catch (e) {
+                console.error('Invalid URL:', endpoint);
+                // Fallback - try to extract path after domain
+                const pathMatch = endpoint.match(/https?:\/\/[^\/]+(\/.*)/);
+                if (pathMatch && pathMatch[1]) {
+                    console.warn(`Fallback: converting ${endpoint} to ${pathMatch[1]}`);
+                    return pathMatch[1];
+                }
+            }
+        }
+        
+        // If the endpoint already begins with /, it's already a relative URL
+        if (endpoint.startsWith('/')) {
+            return endpoint;
+        }
+        
+        // Otherwise, add the leading slash to make it a relative URL
+        return '/' + endpoint;
+    }
     
     // Override XMLHttpRequest for legacy code that might use it
     const originalXHROpen = XMLHttpRequest.prototype.open;
@@ -28,35 +128,48 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const originalFetch = window.fetch;
     window.fetch = function(input, init) {
-        const url = typeof input === 'string' ? input : input.url;
+        let url = typeof input === 'string' ? input : input.url;
         
-        if (url === '/like-recipe/' || 
-            url.startsWith('/like-recipe/?') || 
-            url.includes('/like-recipe/') || 
-            url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
-            
-            console.warn('Intercepted request to deprecated like-recipe URL, redirecting to /recipe/like/');
-            let newUrl;
-            
-            // Handle both absolute and relative URLs
-            if (url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
-                // Absolute URL - replace the path part
-                newUrl = url.replace(/\/like-recipe\//, '/recipe/like/');
-            } else {
-                // Relative URL
-                newUrl = url.replace('/like-recipe/', '/recipe/like/');
+        // Log all fetch requests for debugging
+        console.log(`FETCH DEBUG: Original URL: ${url}`);
+        
+        // Check if this is a like-related request
+        if (url.includes('like-recipe') || url.includes('recipe/like')) {
+            // Start with the most specific like-recipe URL pattern
+            if (url === '/like-recipe/' || 
+                url.startsWith('/like-recipe/?') || 
+                url.includes('/like-recipe/') || 
+                url.match(/https?:\/\/[^\/]+\/like-recipe\//)) {
+                
+                // Force to the correct relative URL using our helper
+                let newUrl = getRelativeApiUrl('/recipe/like/');
+                console.warn(`Intercepted fetch to ${url}, redirecting to ${newUrl}`);
+                
+                if (typeof input !== 'string') {
+                    const newRequest = new Request(newUrl, input);
+                    return originalFetch(newRequest, init);
+                } else {
+                    return originalFetch(newUrl, init);
+                }
             }
+        }
+        
+        // Always ensure relative URLs for all API requests (preventative)
+        if (url.startsWith('http') && (
+            url.includes('/api/') || 
+            url.includes('/recipe/') ||
+            url.includes('/collection/') ||
+            url.includes('/user/')
+        )) {
+            let relativeUrl = getRelativeApiUrl(url);
+            console.warn(`Converting absolute API URL ${url} to relative ${relativeUrl}`);
             
-            console.log('Redirecting request from', url, 'to', newUrl);
-            
-            // If input is a Request object, create a new one with the updated URL
             if (typeof input !== 'string') {
-                const newRequest = new Request(newUrl, input);
+                const newRequest = new Request(relativeUrl, input);
                 return originalFetch(newRequest, init);
+            } else {
+                return originalFetch(relativeUrl, init);
             }
-            
-            // If input is a string, just use the new URL
-            return originalFetch(newUrl, init);
         }
         
         // Otherwise, proceed with original fetch
@@ -133,6 +246,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize the local storage from the initial page load
     initLikeStorageFromHTML();
+    
+    // Fix any hardcoded URLs in the DOM
+    fixHardcodedUrls();
     
     // Initialize like buttons and links
     initLikeButtons();
@@ -527,6 +643,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Function to find and fix any hardcoded URLs in the DOM
+    function fixHardcodedUrls() {
+        // Fix any form actions
+        document.querySelectorAll('form').forEach(form => {
+            if (form.action && form.action.includes('/like-recipe/')) {
+                console.warn(`Found form with absolute like-recipe URL: ${form.action}`);
+                form.action = getRelativeApiUrl('/recipe/like/');
+                console.log(`Fixed form action to: ${form.action}`);
+            }
+        });
+        
+        // Fix any links
+        document.querySelectorAll('a').forEach(link => {
+            if (link.href && link.href.includes('/like-recipe/')) {
+                console.warn(`Found link with absolute like-recipe URL: ${link.href}`);
+                // Extract the relative path and update
+                link.href = getRelativeApiUrl('/recipe/like/');
+                console.log(`Fixed link href to: ${link.href}`);
+            }
+        });
+        
+        // Fix any data attributes that might contain URLs
+        document.querySelectorAll('[data-url]').forEach(el => {
+            if (el.dataset.url && el.dataset.url.includes('/like-recipe/')) {
+                console.warn(`Found data-url with absolute like-recipe URL: ${el.dataset.url}`);
+                el.dataset.url = getRelativeApiUrl('/recipe/like/');
+                console.log(`Fixed data-url to: ${el.dataset.url}`);
+            }
+        });
+        
+        // Check for script tags with hardcoded URLs 
+        document.querySelectorAll('script').forEach(script => {
+            if (script.src && script.src.includes('/like-recipe/')) {
+                console.warn(`Found script with absolute like-recipe URL: ${script.src}`);
+                // We can't modify script src after loading, but we can log it
+            }
+        });
+    }
+    
     // Common function to send like request to server
     function sendLikeRequest(recipeId, shouldLike, callback) {
         if (!recipeId) {
@@ -551,11 +706,11 @@ document.addEventListener('DOMContentLoaded', function() {
             'action': 'like'
         };
         
-        // The URL to fetch - MUST use /recipe/like/ as configured in the Django URLs
-        // Use relative URL to avoid cross-domain issues
-        const url = '/recipe/like/';
+        // The URL to fetch - MUST use relative path to work across environments
+        // Force to relative URL using helper
+        const url = getRelativeApiUrl('/recipe/like/');
         
-        console.log(`%c LIKE REQUEST `, 'background: #4CAF50; color: white; font-size: 14px; font-weight: bold;');
+        console.log(`%c SENDING LIKE REQUEST `, 'background: #FF5722; color: white; font-size: 14px; font-weight: bold;');
         console.table({
             'URL': url,
             'Recipe ID': recipeId,
@@ -576,13 +731,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const params = new URLSearchParams(requestData);
         console.log('Request body (urlencoded):', params.toString());
         
-        // Use try-catch to provide detailed error handling
+        // Always use relative URL with window.fetch
         try {
-            fetch(url, {
+            window.fetch(url, {
                 method: 'POST',
                 headers: headers,
                 body: params,
-                // Add credentials to ensure cookies are sent
                 credentials: 'same-origin'
             })
             .then(response => {
