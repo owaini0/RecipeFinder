@@ -6,6 +6,55 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Like handler initialized");
     
+    // Add fetch API interception for compatibility
+    const originalFetch = window.fetch;
+    window.fetch = function(input, init) {
+        // Convert input to string if it's a Request object
+        const url = typeof input === 'string' ? input : input.url;
+        
+        // Check if it's a request to the old URL and redirect
+        if (url === '/like-recipe/' || url.startsWith('/like-recipe/?')) {
+            console.warn('Intercepted request to deprecated /like-recipe/ URL, redirecting to /recipe/like/');
+            const newUrl = url.replace('/like-recipe/', '/recipe/like/');
+            
+            // If input is a Request object, create a new one with the updated URL
+            if (typeof input !== 'string') {
+                const newRequest = new Request(newUrl, input);
+                return originalFetch(newRequest, init);
+            }
+            
+            // If input is a string, just use the new URL
+            return originalFetch(newUrl, init);
+        }
+        
+        // Otherwise, proceed with original fetch
+        return originalFetch(input, init);
+    };
+    
+    // Intercept jQuery Ajax calls if jQuery is available
+    if (typeof jQuery !== 'undefined') {
+        const originalAjax = jQuery.ajax;
+        jQuery.ajax = function(url, settings) {
+            // Handle overloaded signature
+            if (typeof url === 'object') {
+                settings = url;
+                url = settings.url;
+            }
+            
+            // Check if settings is an object
+            if (settings && typeof settings === 'object') {
+                // Check if URL is the old path and update it
+                if (settings.url === '/like-recipe/' || (settings.url && settings.url.startsWith('/like-recipe/?'))) {
+                    console.warn('Intercepted jQuery ajax request to deprecated /like-recipe/ URL, redirecting to /recipe/like/');
+                    settings.url = settings.url.replace('/like-recipe/', '/recipe/like/');
+                }
+            }
+            
+            // Call original Ajax with possibly modified settings
+            return originalAjax.apply(this, arguments);
+        };
+    }
+    
     // For jQuery compatibility - ensure jQuery doesn't handle these clicks separately
     if (typeof jQuery !== 'undefined') {
         console.log("Setting jQuery event handler overrides");
