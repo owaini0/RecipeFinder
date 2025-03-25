@@ -306,7 +306,6 @@ ul {
     background-color: var(--accent-color);
     border-radius: 20px;
     overflow: hidden;
-    padding-bottom: 75%;
     width: 100%;
     margin-left: auto;
 }

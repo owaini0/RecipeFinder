@@ -22,6 +22,7 @@ from RecipeFinderApp.models import (
     RecipeVideo, Like, Comment, Follow, Collection, 
     ChefVerification
 )
+from RecipeFinderApp.tests import add_images_to_recipes
 
 def clear_data():
     """Clear existing data before populating"""
@@ -39,17 +40,8 @@ def clear_data():
     
     print("Data cleared.")
 
-def setup_sample_images():
-    """Setup sample image directory"""
-    sample_img_dir = Path('sample_images')
-    
-    if not sample_img_dir.exists():
-        sample_img_dir.mkdir()
-    
-    return sample_img_dir
-
 def create_users():
-    """Create sample users and chefs"""
+    """users and chefs"""
     print("Creating users...")
     users = []
     
@@ -202,7 +194,7 @@ def create_recipes(users, categories):
             'notes': 'For extra flavor, try adding crumbled feta cheese, sliced radishes, or microgreens on top. You can also experiment with different spices like everything bagel seasoning or za\'atar.'
         },
         {
-            'title': 'Creamy Tomato Soup',
+            'title': 'Spicy Creamy Tomato Soup',
             'description': 'A comforting, silky smooth tomato soup that\'s perfect for lunch or as a starter. Pair with a grilled cheese sandwich for the ultimate comfort meal.',
             'ingredients': '2 tablespoons olive oil\n1 onion, chopped\n2 garlic cloves, minced\n2 tablespoons tomato paste\n2 (28-ounce) cans whole peeled tomatoes\n2 cups vegetable broth\n1/2 cup heavy cream\n2 tablespoons fresh basil, chopped (plus more for garnish)\n1 teaspoon sugar\nSalt and pepper to taste',
             'instructions': '1. Heat olive oil in a large pot over medium heat.\n2. Add onion and cook until soft and translucent, about 5 minutes.\n3. Add garlic and cook for another minute until fragrant.\n4. Stir in tomato paste and cook for 2 minutes.\n5. Add canned tomatoes (with their juice) and vegetable broth.\n6. Bring to a simmer and cook for 15-20 minutes.\n7. Use an immersion blender to puree the soup until smooth. Alternatively, carefully transfer to a blender in batches.\n8. Return soup to pot if using a blender and add heavy cream, chopped basil, and sugar.\n9. Simmer for an additional 5 minutes. Season with salt and pepper.\n10. Serve hot, garnished with additional basil and a swirl of cream if desired.',
@@ -263,64 +255,13 @@ def create_recipes(users, categories):
     return recipes
 
 def create_images_for_recipes(recipes):
-    """Create sample recipe images with placeholders"""
+    """Create recipe images using actual images from recipe_images directory"""
     print("Creating recipe images...")
     
-    # Create sample_images directory if it doesn't exist
-    sample_img_dir = Path('sample_images')
-    if not sample_img_dir.exists():
-        sample_img_dir.mkdir()
+    # Use the helper function from tests.py to attach real images
+    add_images_to_recipes(recipes)
     
-    # Create a simple placeholder image if none exist
-    placeholder_path = sample_img_dir / 'placeholder.jpg'
-    if not placeholder_path.exists():
-        print("Creating a placeholder image file...")
-        try:
-            # Option 1: Download a placeholder from a placeholder image service
-            import requests
-            response = requests.get('https://via.placeholder.com/800x600/CCCCCC/969696?text=Recipe+Image', stream=True)
-            with open(placeholder_path, 'wb') as f:
-                f.write(response.content)
-            print(f"Downloaded placeholder image to {placeholder_path}")
-        except Exception as e:
-            print(f"Failed to download placeholder image: {e}")
-            print("Using built-in sample image creation as fallback...")
-            
-            # Option 2: Create a basic colored rectangle as placeholder
-            try:
-                from PIL import Image, ImageDraw, ImageFont
-                img = Image.new('RGB', (800, 600), color=(200, 200, 200))
-                d = ImageDraw.Draw(img)
-                d.rectangle([(50, 50), (750, 550)], fill=(150, 150, 150))
-                d.text((400, 300), "Recipe Image", fill=(255, 255, 255), anchor="mm")
-                img.save(placeholder_path)
-                print(f"Created placeholder image at {placeholder_path}")
-            except Exception as e:
-                print(f"Failed to create placeholder image: {e}")
-                # If all else fails, don't create image records
-                print("WARNING: Could not create placeholder images. Recipe images will be skipped.")
-                return
-    
-    # Now attach the placeholder image to recipes
-    for recipe in recipes:
-        # Create 1-2 images per recipe
-        num_images = random.randint(1, 2)
-        for i in range(num_images):
-            # Open the file and create a Django File object
-            with open(placeholder_path, 'rb') as img_file:
-                img = RecipeImage(
-                    recipe=recipe,
-                    caption=f"Delicious {recipe.title}" if i == 0 else f"{recipe.title} - variation",
-                    is_primary=(i == 0)  # First image is primary
-                )
-                # Assign the file to the ImageField
-                img.image.save(
-                    f"{slugify(recipe.title)}-{i+1}.jpg", 
-                    File(img_file),
-                    save=True
-                )
-    
-    print(f"Created recipe images for all recipes")
+    print(f"Added images to recipes")
 
 def create_likes_and_comments(users, recipes):
     """Create likes and comments for recipes"""

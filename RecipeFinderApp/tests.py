@@ -3,10 +3,13 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.text import slugify
+from django.core.files.base import File
+import os
+from pathlib import Path
 
 from .models import (
     Recipe, UserProfile, Category, Like, 
-    Follow, Collection, Comment
+    Follow, Collection, Comment, RecipeImage
 )
 
 class RecipeTestCase(TestCase):
@@ -47,8 +50,42 @@ class RecipeTestCase(TestCase):
         )
         self.recipe.categories.add(self.category)
         
+        # Add images from recipe_images directory to the recipe
+        self.add_recipe_images()
+        
         # Create a client
         self.client = Client()
+    
+    def add_recipe_images(self):
+        """Add images from recipe_images directory to test recipes"""
+        # Path to the recipe_images directory
+        images_dir = Path('recipe_images')
+        
+        # Check if the directory exists
+        if not images_dir.exists():
+            print("Warning: recipe_images directory not found")
+            return
+        
+        # Get all image files from the directory
+        image_files = list(images_dir.glob('*.png')) + list(images_dir.glob('*.jpg')) + list(images_dir.glob('*.jpeg'))
+        
+        # If we have images, add the first one to our test recipe
+        if image_files:
+            img_path = image_files[0]
+            with open(img_path, 'rb') as img_file:
+                # Create a RecipeImage instance
+                recipe_image = RecipeImage(
+                    recipe=self.recipe,
+                    caption="Test Recipe Image",
+                    is_primary=True
+                )
+                # Save the image to the RecipeImage instance
+                recipe_image.image.save(
+                    img_path.name,
+                    File(img_file),
+                    save=True
+                )
+            print(f"Added image {img_path.name} to test recipe")
 
 class RecipeViewTests(RecipeTestCase):
     """Basic tests for our main recipe views"""
@@ -71,7 +108,7 @@ class RecipeViewTests(RecipeTestCase):
     def test_recipe_filtering(self):
         """Make sure search/filtering works"""
         # Create another recipe for testing
-        Recipe.objects.create(
+        breakfast_recipe = Recipe.objects.create(
             title='Breakfast Pancakes',
             slug=slugify('Breakfast Pancakes'),
             author=self.user1,
@@ -83,6 +120,25 @@ class RecipeViewTests(RecipeTestCase):
             servings=2,
             difficulty='easy'
         )
+        
+        # Add a specific pancake image to this recipe if available
+        images_dir = Path('recipe_images')
+        pancake_images = list(images_dir.glob('*pancake*.png')) + list(images_dir.glob('*Pancake*.png'))
+        
+        if pancake_images:
+            img_path = pancake_images[0]
+            with open(img_path, 'rb') as img_file:
+                recipe_image = RecipeImage(
+                    recipe=breakfast_recipe,
+                    caption="Breakfast Pancakes Image",
+                    is_primary=True
+                )
+                recipe_image.image.save(
+                    img_path.name,
+                    File(img_file),
+                    save=True
+                )
+            print(f"Added image {img_path.name} to breakfast recipe")
         
         # Test search by title
         response = self.client.get(f"{reverse('recipe_list')}?query=pancake")
@@ -205,3 +261,51 @@ class CollectionTest(RecipeTestCase):
         
         # Check it's in the collection
         self.assertIn(self.recipe, collection.recipes.all())
+
+# Helper function to add images to recipes for the population script
+def add_images_to_recipes(recipes):
+    """Attach actual images from recipe_images directory to recipes"""
+    images_dir = Path('recipe_images')
+    
+    if not images_dir.exists():
+        print("Warning: recipe_images directory not found")
+        return
+    
+    # Match recipe titles with specific image files based on name patterns
+    image_mapping = {
+        'pancake': 'Sunday20Pancakes20Recipe20NZ20Chelsea20Sugar.png',
+        'carbonara': 'carbonara-horizontal-mediumSquareAt3X-v2.png',
+        'avocado': 'avocado-6b1cf76.png',
+        'tomato': 'creamy-tomato-basil-soup-image.png',
+        'cookie': 'cookie.png'
+    }
+    
+    # Process each recipe
+    for recipe in recipes:
+        # Find a matching image based on recipe title
+        matched_image = None
+        for keyword, image_file in image_mapping.items():
+            if keyword.lower() in recipe.title.lower():
+                matched_image = image_file
+                break
+        
+        # If no specific match, use any available image
+        if not matched_image and os.listdir(images_dir):
+            matched_image = os.listdir(images_dir)[0]
+        
+        # If we have an image, attach it to the recipe
+        if matched_image:
+            img_path = images_dir / matched_image
+            if img_path.exists():
+                with open(img_path, 'rb') as img_file:
+                    recipe_image = RecipeImage(
+                        recipe=recipe,
+                        caption=f"{recipe.title} Image",
+                        is_primary=True
+                    )
+                    recipe_image.image.save(
+                        img_path.name,
+                        File(img_file),
+                        save=True
+                    )
+                print(f"Added image {img_path.name} to recipe '{recipe.title}'")
