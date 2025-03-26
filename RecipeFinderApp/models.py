@@ -5,13 +5,12 @@ from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-# User profile extension with additional chef-related features
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
-    is_chef = models.BooleanField(default=False)  # User identifies as a chef
-    chef_verified = models.BooleanField(default=False)  # Verified chef status
+    is_chef = models.BooleanField(default=False)
+    chef_verified = models.BooleanField(default=False)
     website = models.URLField(blank=True, null=True)
     location = models.CharField(max_length=100, blank=True, null=True)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -19,7 +18,6 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Profile"
     
-    # Combines first and last name for display
     @property
     def full_name(self):
         return f"{self.user.first_name} {self.user.last_name}"
@@ -27,21 +25,18 @@ class UserProfile(models.Model):
     def get_absolute_url(self):
         return reverse('profile_with_username', kwargs={'username': self.user.username})
 
-# Signal handler to automatically create a profile when a user is created
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
 
-# Signal handler to save the profile when the user is saved
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
 
-# Recipe categories (like breakfast, dinner, vegetarian, etc.)
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True)  # Used in URLs
+    slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
     
     class Meta:
@@ -50,7 +45,6 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-# Main recipe model with all recipe details
 class Recipe(models.Model):
     DIFFICULTY_CHOICES = (
         ('easy', 'Easy'),
@@ -59,7 +53,7 @@ class Recipe(models.Model):
     )
     
     title = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True)  # Used for SEO-friendly URLs
+    slug = models.SlugField(unique=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recipes')
     description = models.TextField()
     ingredients = models.TextField(help_text="Enter ingredients, one per line")
@@ -72,10 +66,10 @@ class Recipe(models.Model):
     notes = models.TextField(blank=True, null=True, help_text="Additional notes, tips, or variations for this recipe")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    featured = models.BooleanField(default=False)  # For highlighting recipes on the home page
+    featured = models.BooleanField(default=False)
     
     class Meta:
-        ordering = ['-created_at']  # Newest recipes first
+        ordering = ['-created_at']
     
     def __str__(self):
         return self.title
@@ -83,44 +77,37 @@ class Recipe(models.Model):
     def get_absolute_url(self):
         return reverse('recipe_detail', kwargs={'slug': self.slug})
     
-    # Calculates total time (cooking + prep)
     @property
     def total_time(self):
         return self.cooking_time + self.prep_time
     
-    # Count of likes for display
     @property
     def likes_count(self):
         return self.likes.count()
     
-    # Count of comments for display
     @property
     def comments_count(self):
         return self.comments.count()
     
-    # Splits ingredients into a list for display
     def get_ingredients_list(self):
         return self.ingredients.split('\n')
     
-    # Splits instructions into a list for display
     def get_instructions_list(self):
         return self.instructions.split('\n')
 
-# Images associated with recipes (multiple per recipe)
 class RecipeImage(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='recipe_images/')
     caption = models.CharField(max_length=200, blank=True)
-    is_primary = models.BooleanField(default=False)  # Main image shown in listings
+    is_primary = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        ordering = ['-is_primary', 'uploaded_at']  # Primary images first, then by date
+        ordering = ['-is_primary', 'uploaded_at']
     
     def __str__(self):
         return f"Image for {self.recipe.title}"
 
-# Videos associated with recipes
 class RecipeVideo(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='videos')
     video = models.FileField(upload_to='recipe_videos/')
@@ -130,19 +117,17 @@ class RecipeVideo(models.Model):
     def __str__(self):
         return f"Video for {self.recipe.title}"
 
-# User likes on recipes (for favorites and popularity tracking)
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='likes')
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        unique_together = ('user', 'recipe')  # A user can like a recipe only once
+        unique_together = ('user', 'recipe')
     
     def __str__(self):
         return f"{self.user.username} likes {self.recipe.title}"
 
-# User comments on recipes
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='comments')
@@ -151,24 +136,22 @@ class Comment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['-created_at']  # Newest comments first
+        ordering = ['-created_at']
     
     def __str__(self):
         return f"Comment by {self.user.username} on {self.recipe.title}"
 
-# User follows for social functionality
 class Follow(models.Model):
     follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
     following = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        unique_together = ('follower', 'following')  # Can't follow the same user twice
+        unique_together = ('follower', 'following')
     
     def __str__(self):
         return f"{self.follower.username} follows {self.following.username}"
 
-# Recipe collections for users to organize recipes
 class Collection(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -180,7 +163,7 @@ class Collection(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['-updated_at']  # Most recently updated first
+        ordering = ['-updated_at']
     
     def __str__(self):
         return f"{self.name} by {self.user.username}"

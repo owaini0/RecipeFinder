@@ -10,13 +10,13 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),
     path('logout/', views.user_logout, name='logout'),
 
-    # Profiles - Note the order: specific paths before variable paths
+    # Profiles
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     path('profile/chef-verification/', views.chef_verification, name='chef_verification'),
     path('profile/', views.profile, name='profile'),
     path('profile/<str:username>/', views.profile, name='profile_with_username'),
 
-    # Recipes - Note: more specific patterns first
+    # Recipes
     path('recipe/new/', views.recipe_create, name='recipe_create'),
     path('recipe/<slug:slug>/edit/', views.recipe_edit, name='recipe_edit'),
     path('recipe/<slug:slug>/delete/', views.recipe_delete, name='recipe_delete'),
@@ -24,7 +24,7 @@ urlpatterns = [
     path('recipe/<slug:slug>/', views.recipe_detail, name='recipe_detail'),
     path('recipes/', views.recipe_list, name='recipe_list'),
 
-    # AJAX endpoints
+    # AJAX
     path('user/follow/', views.follow_user, name='follow_user'),
     path('user/follow/status/', views.follow_user_status, name='follow_user_status'),
     path('collection/add/', views.add_to_collection, name='add_to_collection'),

@@ -1,4 +1,3 @@
-// Profile image handling
 function initProfileImageHandling(formProfilePicId) {
     const fileInput = document.getElementById(formProfilePicId);
     const preview = document.getElementById('profilePicPreview');
@@ -6,7 +5,6 @@ function initProfileImageHandling(formProfilePicId) {
     const previewContainer = document.querySelector('.current-pic-preview');
     
     if (previewContainer) {
-        // Make the entire preview area clickable to trigger file input
         previewContainer.addEventListener('click', () => {
             fileInput.click();
         });
@@ -19,9 +17,7 @@ function initProfileImageHandling(formProfilePicId) {
                 
                 reader.onload = function(e) {
                     if (!preview) {
-                        // If no preview exists yet, create one
                         if (previewContainer) {
-                            // Clear placeholder if exists
                             previewContainer.innerHTML = `
                                 <img id="profilePicPreview" alt="Profile picture preview" src="${e.target.result}">
                                 <div class="pic-overlay">
@@ -33,8 +29,7 @@ function initProfileImageHandling(formProfilePicId) {
                     } else {
                         preview.src = e.target.result;
                     }
-                    
-                    // Show remove button
+
                     if (removeBtn) {
                         removeBtn.removeAttribute('disabled');
                         removeBtn.style.display = 'inline-flex';
@@ -45,12 +40,11 @@ function initProfileImageHandling(formProfilePicId) {
             }
         });
     }
-    
-    // Handle remove profile picture
+
     if (removeBtn) {
         removeBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            e.stopPropagation(); // Prevent triggering the container's click event
+            e.stopPropagation();
             
             if (previewContainer) {
                 previewContainer.innerHTML = `
@@ -60,27 +54,23 @@ function initProfileImageHandling(formProfilePicId) {
                     </div>
                 `;
             }
-            
-            // Reset file input
+
             if (fileInput) {
                 fileInput.value = '';
             }
-            
-            // Create hidden input to signal deletion
+
             const deleteField = document.createElement('input');
             deleteField.type = 'hidden';
             deleteField.name = 'profile_pic-clear';
             deleteField.value = 'on';
             document.querySelector('.profile-form').appendChild(deleteField);
-            
-            // Hide remove button
+
             this.style.display = 'none';
             this.setAttribute('disabled', true);
         });
     }
 }
 
-// Multi-step form navigation handler
 function initMultiStepForm() {
     const steps = document.querySelectorAll('.form-step');
     const progressSteps = document.querySelectorAll('.progress-step');
@@ -89,7 +79,7 @@ function initMultiStepForm() {
     
     if (!steps.length || !nextButtons.length) {
         console.log("Multi-step form elements not found");
-        return; // Exit if form elements aren't found
+        return;
     }
     
     console.log(`Found ${steps.length} steps and ${nextButtons.length} next buttons`);
@@ -109,8 +99,7 @@ function initMultiStepForm() {
                 step.classList.remove('active');
             }
         });
-        
-        // Scroll to top of the form
+
         const formContainer = document.querySelector('.recipe-form-container');
         if (formContainer) {
             formContainer.scrollIntoView({ behavior: 'smooth' });
@@ -161,7 +150,7 @@ function initMultiStepForm() {
         console.log("Adding click event to next button");
         button.addEventListener('click', function(e) {
             console.log("Next button clicked");
-            e.preventDefault(); // Prevent any default form submission
+            e.preventDefault();
             if (validateStep(currentStep)) {
                 showStep(currentStep + 1);
             }
@@ -184,6 +173,5 @@ function initMultiStepForm() {
     });
 }
 
-// Make the functions available globally
 window.initProfileImageHandling = initProfileImageHandling;
 window.initMultiStepForm = initMultiStepForm;

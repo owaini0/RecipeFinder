@@ -1,9 +1,3 @@
-/**
- * Standard Notification Utility
- * Provides standardized toast notifications for common actions across the site
- */
-
-// Object containing standard messages for common actions
 const StandardMessages = {
     // Form and data actions
     FORM_SAVED: 'Form saved successfully',
@@ -43,29 +37,23 @@ const StandardMessages = {
     FORBIDDEN_ERROR: 'You do not have permission to perform this action.'
 };
 
-// Shorthand notification functions
 const Notify = {
-    // Success notifications
     success: function(message, duration) {
         showToast(message, 'success', duration || 3000);
     },
-    
-    // Error notifications
+
     error: function(message, duration) {
         showToast(message, 'error', duration || 4000);
     },
     
-    // Info notifications
     info: function(message, duration) {
         showToast(message, 'info', duration || 3000);
     },
     
-    // Warning notifications
     warning: function(message, duration) {
         showToast(message, 'warning', duration || 3500);
     },
     
-    // Handle API response errors
     apiError: function(xhr) {
         let message = StandardMessages.GENERIC_ERROR;
         
@@ -73,8 +61,7 @@ const Notify = {
             this.error(message);
             return;
         }
-        
-        // Handle different HTTP status codes
+
         if (xhr.status === 0) {
             message = StandardMessages.CONNECTION_ERROR;
         } else if (xhr.status === 401) {
@@ -93,9 +80,7 @@ const Notify = {
     }
 };
 
-// Initialize AJAX error handling to use toasts
 document.addEventListener('DOMContentLoaded', function() {
-    // Set up global AJAX error handler if jQuery is available
     if (typeof $ !== 'undefined') {
         $(document).ajaxError(function(event, xhr, settings) {
             console.error('AJAX Error:', {
@@ -105,14 +90,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 url: settings.url
             });
             
-            // Don't show toast for aborted requests
             if (xhr.statusText === 'abort') return;
-            
-            // Check for HTML response which may indicate a server error
+
             if (xhr.responseText && typeof xhr.responseText === 'string' && 
                 xhr.responseText.trim().startsWith('<!DOCTYPE')) {
                 console.error('Server returned HTML instead of JSON. Possible server error or redirect.');
-                // Show a more helpful message to the user
                 Notify.error('Server error occurred. The application may need to be refreshed.');
                 return;
             }

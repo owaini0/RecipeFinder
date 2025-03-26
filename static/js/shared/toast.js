@@ -1,9 +1,3 @@
-/**
- * Global Toast Notification System
- * Usage: showToast('Your message here', 'success|error|info|warning');
- */
-
-// Create toast container on DOM ready
 document.addEventListener('DOMContentLoaded', function() {
     if (!document.getElementById('toast-container')) {
         const toastContainer = document.createElement('div');
@@ -12,23 +6,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-/**
- * Display a toast notification
- * @param {string} message - The message to display
- * @param {string} type - The type of toast: 'success', 'error', 'info', 'warning' (default: 'success')
- * @param {number} duration - Time in ms to show the toast (default: 3000)
- */
 function showToast(message, type = 'success', duration = 3000) {
     console.log(`Showing toast: ${message} (${type})`);
     
-    // Set longer durations for error and warning toasts
     if (type === 'error' && duration === 3000) {
-        duration = 5000; // Longer duration for errors by default
+        duration = 5000;
     } else if (type === 'warning' && duration === 3000) {
-        duration = 4000; // Longer duration for warnings by default
+        duration = 4000;
     }
-    
-    // Create toast container if it doesn't exist
+
     if (!document.getElementById('toast-container')) {
         const toastContainer = document.createElement('div');
         toastContainer.id = 'toast-container';
@@ -36,8 +22,7 @@ function showToast(message, type = 'success', duration = 3000) {
     }
     
     const toastContainer = document.getElementById('toast-container');
-    
-    // Clear any existing toasts with the same message to prevent duplicates
+
     const existingToasts = toastContainer.querySelectorAll('.recipe-toast');
     existingToasts.forEach(toast => {
         const toastMessage = toast.querySelector('span').textContent;
@@ -45,8 +30,7 @@ function showToast(message, type = 'success', duration = 3000) {
             toast.remove();
         }
     });
-    
-    // Determine icon based on type
+
     let iconClass = 'fa-check-circle';
     let toastClass = 'recipe-toast';
     
@@ -64,8 +48,7 @@ function showToast(message, type = 'success', duration = 3000) {
             toastClass += ' warning-toast';
             break;
     }
-    
-    // Create toast element
+
     const toast = document.createElement('div');
     toast.className = toastClass;
     toast.innerHTML = `
@@ -74,8 +57,7 @@ function showToast(message, type = 'success', duration = 3000) {
             <span>${message}</span>
         </div>
     `;
-    
-    // Add close button to allow manual dismissal
+
     const closeButton = document.createElement('button');
     closeButton.className = 'toast-close-btn';
     closeButton.innerHTML = '<i class="fas fa-times"></i>';
@@ -92,8 +74,7 @@ function showToast(message, type = 'success', duration = 3000) {
         setTimeout(() => toast.remove(), 300);
     };
     toast.appendChild(closeButton);
-    
-    // Create and add a progress bar
+
     const progressBar = document.createElement('div');
     progressBar.className = 'toast-progress';
     progressBar.style.position = 'absolute';
@@ -109,24 +90,21 @@ function showToast(message, type = 'success', duration = 3000) {
     
     // Add to container
     toastContainer.appendChild(toast);
-    
-    // Animate in
+
     setTimeout(() => {
         toast.classList.add('show');
         progressBar.style.width = '0';
     }, 10);
-    
-    // Remove after duration
+
     const toastTimeout = setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.remove();
             }
-        }, 300); // Match the CSS transition duration
+        }, 300);
     }, duration);
     
-    // Store the timeout ID on the toast element so we can clear it if needed
     toast.toastTimeout = toastTimeout;
     
     return toast;

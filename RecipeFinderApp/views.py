@@ -60,12 +60,10 @@ def register(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             try:
-                # Ensure database integrity
                 with transaction.atomic():
                     user = form.save()
                     UserProfile.objects.get_or_create(user=user)
-                
-                # Auto-login after registration
+
                 username = form.cleaned_data.get('username')
                 password = form.cleaned_data.get('password1')
                 user = authenticate(username=username, password=password)
@@ -80,7 +78,6 @@ def register(request):
             except Exception as e:
                 messages.error(request, f'An error occurred during registration: {str(e)}')
         else:
-            # Help user fix form errors
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f'{field.replace("_", " ").title()}: {error}')
@@ -89,7 +86,7 @@ def register(request):
     
     context = {
         'form': form,
-        'timestamp': int(timezone.now().timestamp())  # Cache-busting
+        'timestamp': int(timezone.now().timestamp())
     }
     
     return render(request, 'recipe_finder/register.html', context)
@@ -211,7 +208,6 @@ def edit_profile(request):
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
-            # Don't force is_chef to be true
             form.save()
             messages.success(request, 'Profile updated successfully!')
             return redirect('profile')
@@ -225,7 +221,6 @@ def edit_profile(request):
         'recipes_needed': recipes_needed
     })
 
-# Recipe Views
 def recipe_list(request):
     """View for listing and searching recipes"""
     recipes = Recipe.objects.all()
@@ -257,7 +252,7 @@ def recipe_list(request):
         liked_recipes_ids = Like.objects.filter(user=request.user).values_list('recipe_id', flat=True)
     
     # Pagination
-    paginator = Paginator(recipes, 9)  # Show 9 recipes per page
+    paginator = Paginator(recipes, 9)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -273,13 +268,9 @@ def recipe_detail(request, slug):
     """View for showing a recipe's details"""
     recipe = get_object_or_404(Recipe, slug=slug)
     comments = Comment.objects.filter(recipe=recipe)
-    
-    # Get similar recipes from same categories
     similar_recipes = Recipe.objects.filter(
         categories__in=recipe.categories.all()
     ).exclude(id=recipe.id).distinct()[:3]
-    
-    # Check if user has liked this recipe
     user_liked = False
     user_collections = []
     if request.user.is_authenticated:
@@ -287,14 +278,10 @@ def recipe_detail(request, slug):
             user=request.user, 
             recipe=recipe
         ).exists()
-        
-        # Get user's collections
         user_collections = Collection.objects.filter(user=request.user)
-    
-    # Comment form 
+
     comment_form = CommentForm()
     if request.method == 'POST' and request.user.is_authenticated:
-        # Check if it's an AJAX comment submission
         if request.POST.get('action') == 'comment':
             comment_form = CommentForm(request.POST)
             if comment_form.is_valid():
@@ -302,8 +289,7 @@ def recipe_detail(request, slug):
                 new_comment.user = request.user
                 new_comment.recipe = recipe
                 new_comment.save()
-                
-                # Check if it's an AJAX request
+
                 is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
                 if is_ajax:
                     return JsonResponse({
@@ -312,11 +298,9 @@ def recipe_detail(request, slug):
                         'content': new_comment.content
                     })
                 else:
-                    # Non-AJAX comment submission should redirect
                     messages.success(request, 'Comment added successfully!')
                     return redirect('recipe_detail', slug=slug)
         else:
-            # Regular form submission
             comment_form = CommentForm(request.POST)
             if comment_form.is_valid():
                 new_comment = comment_form.save(commit=False)
@@ -349,26 +333,20 @@ def recipe_create(request):
         video_form = RecipeVideoForm(request.POST, request.FILES)
         
         if recipe_form.is_valid():
-            # Recipe form is valid, save the recipe
             recipe = recipe_form.save(commit=False)
             recipe.author = request.user
             recipe.save()
-            recipe_form.save_m2m()  # Save many-to-many relationships
-            
-            # Handle multiple media uploads
+            recipe_form.save_m2m()
             files = request.FILES.getlist('image')
             if files:
-                # Process all uploaded files
-                is_first = True  # Track first file to set as primary
+                is_first = True
                 for file in files:
                     try:
-                        # Check if it's a video file
                         import os
                         ext = os.path.splitext(file.name)[1].lower()
                         video_extensions = ['.mp4', '.webm', '.ogg']
                         
                         if ext in video_extensions:
-                            # Create a video instance
                             video = RecipeVideo(
                                 recipe=recipe,
                                 video=file,
@@ -376,33 +354,28 @@ def recipe_create(request):
                             )
                             video.save()
                         else:
-                            # Create an image instance
                             image = RecipeImage(
                                 recipe=recipe,
                                 image=file,
                                 caption=request.POST.get('caption', ''),
-                                is_primary=is_first  # First file is primary
+                                is_primary=is_first
                             )
                             image.save()
-                            is_first = False  # Only the first file is primary
+                            is_first = False
                     except Exception as e:
                         messages.error(request, f"Error saving media: {str(e)}")
                 
                 messages.success(request, f'Recipe created successfully with uploaded media!')
             else:
-                # No images or videos uploaded
                 messages.warning(request, "Recipe saved without images or videos. You can edit your recipe to add media later.")
             
             return redirect('recipe_detail', slug=recipe.slug)
         else:
-            # Recipe form is invalid
             messages.error(request, "Please correct the errors in your form.")
     else:
         recipe_form = RecipeForm()
         image_form = RecipeImageForm()
         video_form = RecipeVideoForm()
-    
-    # Add categories to the context
     categories = Category.objects.all()
     
     context = {
@@ -418,7 +391,6 @@ def recipe_edit(request, slug):
     """View for editing an existing recipe"""
     recipe = get_object_or_404(Recipe, slug=slug)
     
-    # Check if user is the author
     if request.user != recipe.author:
         return HttpResponseForbidden("You don't have permission to edit this recipe")
     
@@ -429,33 +401,26 @@ def recipe_edit(request, slug):
         
         if recipe_form.is_valid():
             recipe_form.save()
-            
-            # Handle multiple media uploads
+
             files = request.FILES.getlist('image')
             if files:
-                # Process all uploaded files
                 make_primary = request.POST.get('is_primary') == 'on'
                 
                 if make_primary:
-                    # Reset primary status on existing images if a new one will be primary
                     RecipeImage.objects.filter(recipe=recipe, is_primary=True).update(is_primary=False)
                 
-                # Determine if this is the first image for the recipe
                 first_image = not RecipeImage.objects.filter(recipe=recipe).exists()
-                
-                # Count for reporting to user
+
                 image_count = 0
                 video_count = 0
                 
                 for file in files:
                     try:
-                        # Check if it's a video file
                         import os
                         ext = os.path.splitext(file.name)[1].lower()
                         video_extensions = ['.mp4', '.webm', '.ogg']
                         
                         if ext in video_extensions:
-                            # Create a video instance
                             video = RecipeVideo(
                                 recipe=recipe,
                                 video=file,
@@ -464,22 +429,18 @@ def recipe_edit(request, slug):
                             video.save()
                             video_count += 1
                         else:
-                            # Create an image instance
                             image = RecipeImage(
                                 recipe=recipe,
                                 image=file,
                                 caption=request.POST.get('caption', ''),
-                                # Make the first image primary if no images exist, or if requested
                                 is_primary=(first_image and image_count == 0) or make_primary
                             )
                             image.save()
                             image_count += 1
-                            # Only the first image should be primary if multiple are uploaded
                             make_primary = False
                     except Exception as e:
                         messages.error(request, f"Error saving media: {str(e)}")
                 
-                # Craft a success message based on what was uploaded
                 if image_count > 0 and video_count > 0:
                     messages.success(request, f'Recipe updated with {image_count} new images and {video_count} new videos!')
                 elif image_count > 0:
@@ -510,8 +471,7 @@ def recipe_edit(request, slug):
 def recipe_delete(request, slug):
     """View for deleting a recipe"""
     recipe = get_object_or_404(Recipe, slug=slug)
-    
-    # Check if user is the author
+
     if request.user != recipe.author:
         return HttpResponseForbidden("You don't have permission to delete this recipe")
     
@@ -522,7 +482,6 @@ def recipe_delete(request, slug):
     
     return render(request, 'recipe_finder/recipe_delete.html', {'recipe': recipe})
 
-# AJAX Interaction Views
 @login_required
 @require_POST
 def like_recipe(request):
@@ -533,24 +492,17 @@ def like_recipe(request):
         return JsonResponse({'error': 'No recipe_id provided'}, status=400)
     
     try:
-        # The try block should only handle normal processing,
-        # not the 404 case which should be handled by get_object_or_404
         recipe = Recipe.objects.get(pk=recipe_id)
         
-        # Check if user already liked this recipe
         existing_like = Like.objects.filter(user=request.user, recipe=recipe).first()
         
         if existing_like:
-            # User already liked it, so unlike
             existing_like.delete()
             liked = False
         else:
-            # User hasn't liked it yet, so create a new like
-            # Use get_or_create to prevent duplicate likes (race condition)
             _, created = Like.objects.get_or_create(user=request.user, recipe=recipe)
             liked = True
-        
-        # Get the updated count directly from the database
+
         updated_count = recipe.likes.count()
         
         return JsonResponse({
@@ -558,13 +510,9 @@ def like_recipe(request):
             'likes_count': updated_count
         })
     except Recipe.DoesNotExist:
-        # If recipe doesn't exist, return 404
         return JsonResponse({'error': 'Recipe not found'}, status=404)
     except Exception as e:
-        # More specific error response
         if "UNIQUE constraint failed" in str(e):
-            # This is a race condition - the user already liked this recipe
-            # Return a 200 response with the current state instead of an error
             try:
                 recipe = Recipe.objects.get(id=recipe_id)
                 like_exists = Like.objects.filter(user=request.user, recipe=recipe).exists()
@@ -601,15 +549,12 @@ def follow_user(request):
         ).first()
         
         if existing_follow:
-            # User already followed, so unfollow
             existing_follow.delete()
             following = False
         else:
-            # Create new follow
             Follow.objects.create(follower=request.user, following=user_to_follow)
             following = True
         
-        # Get the updated followers count
         followers_count = user_to_follow.followers.count()
         
         return JsonResponse({
@@ -630,7 +575,6 @@ def follow_user_status(request):
     try:
         user_to_check = User.objects.get(id=user_id)
         
-        # Check if the current user is following the specified user
         following = False
         if request.user.is_authenticated:
             following = Follow.objects.filter(
@@ -660,7 +604,6 @@ def collection_list(request):
     """View for listing a user's collections"""
     collections = Collection.objects.filter(user=request.user)
     
-    # Check if JSON format is requested
     if request.GET.get('format') == 'json':
         collections_data = []
         for collection in collections:
@@ -679,13 +622,11 @@ def collection_detail(request, pk):
     """View for showing a collection's details"""
     collection = get_object_or_404(Collection, pk=pk)
     
-    # Check if user has permission to view
     if collection.user != request.user and not collection.is_public:
         return HttpResponseForbidden("You don't have permission to view this collection")
     
     recipes = collection.recipes.all()
-    
-    # Check which recipes the user has liked
+
     liked_recipes_ids = []
     if request.user.is_authenticated:
         liked_recipes_ids = Like.objects.filter(user=request.user).values_list('recipe_id', flat=True)
@@ -717,8 +658,7 @@ def collection_create(request):
 def collection_edit(request, pk):
     """View for editing an existing collection"""
     collection = get_object_or_404(Collection, pk=pk)
-    
-    # Check if user is the owner
+
     if request.user != collection.user:
         return HttpResponseForbidden("You don't have permission to edit this collection")
     
@@ -742,8 +682,7 @@ def collection_edit(request, pk):
 def collection_delete(request, pk):
     """View for deleting a collection"""
     collection = get_object_or_404(Collection, pk=pk)
-    
-    # Check if user is the owner
+
     if request.user != collection.user:
         return HttpResponseForbidden("You don't have permission to delete this collection")
     
@@ -763,8 +702,7 @@ def add_to_collection(request):
     
     recipe = get_object_or_404(Recipe, id=recipe_id)
     collection = get_object_or_404(Collection, id=collection_id)
-    
-    # Check if user owns the collection
+
     if collection.user != request.user:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'error': 'You do not own this collection'}, status=403)
@@ -773,17 +711,17 @@ def add_to_collection(request):
             return redirect('recipe_detail', slug=recipe.slug)
     
     if recipe in collection.recipes.all():
-        # Remove recipe if it's already in collection
+  
         collection.recipes.remove(recipe)
         in_collection = False
         message = f'Recipe removed from "{collection.name}"'
     else:
-        # Add recipe to collection
+      
         collection.recipes.add(recipe)
         in_collection = True
         message = f'Recipe added to "{collection.name}"'
     
-    # Check if it's an AJAX request
+   
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         response_data = {
             'in_collection': in_collection,
@@ -791,22 +729,21 @@ def add_to_collection(request):
         }
         return JsonResponse(response_data)
     else:
-        # Handle regular form submission
+
         messages.success(request, message)
         return redirect('recipe_detail', slug=recipe.slug)
 
-# Category Views
+
 def category_detail(request, slug):
     """View for showing recipes in a specific category"""
     category = get_object_or_404(Category, slug=slug)
     recipes = Recipe.objects.filter(categories=category)
     
-    # Check which recipes the user has liked
+  
     liked_recipes_ids = []
     if request.user.is_authenticated:
         liked_recipes_ids = Like.objects.filter(user=request.user).values_list('recipe_id', flat=True)
     
-    # Pagination
     paginator = Paginator(recipes, 9)  # Show 9 recipes per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -823,13 +760,10 @@ def category_list_json(request):
     search_term = request.GET.get('term', '')
     
     if search_term:
-        # If search term provided, filter categories
         categories = Category.objects.filter(name__icontains=search_term)
     else:
-        # Otherwise return all categories
         categories = Category.objects.all()
-    
-    # Format the data for Select2
+
     category_data = [{'id': cat.id, 'name': cat.name} for cat in categories]
     
     return JsonResponse({'categories': category_data})
@@ -843,19 +777,15 @@ def category_create(request):
     if not category_name:
         return JsonResponse({'success': False, 'error': 'Category name is required'}, status=400)
     
-    # Check if category already exists
     existing_category = Category.objects.filter(name__iexact=category_name).first()
     if existing_category:
-        # Return the existing category
         return JsonResponse({
             'success': True, 
             'category': {'id': existing_category.id, 'name': existing_category.name}
         })
     
-    # Create a new category
     import itertools
     
-    # Generate a unique slug
     max_length = Category._meta.get_field('slug').max_length
     slug_candidate = slug_original = slugify(category_name)[:max_length]
     
@@ -864,7 +794,6 @@ def category_create(request):
             break
         slug_candidate = '{}-{}'.format(slug_original[:max_length - len(str(i)) - 1], i)
     
-    # Create the new category
     try:
         category = Category.objects.create(
             name=category_name,
@@ -881,19 +810,16 @@ def category_create(request):
 def chef_verification(request):
     """View for submitting chef verification request"""
     if request.method == 'POST':
-        # Ensure that the user is a chef in their profile
         profile = request.user.profile
         if not profile.is_chef:
             profile.is_chef = True
             profile.save()
-        
-        # Ensure the user has at least 5 recipes
+
         recipe_count = Recipe.objects.filter(author=request.user).count()
         if recipe_count < 5:
             messages.error(request, 'You need at least 5 recipes to apply for chef verification')
             return redirect('profile_with_username', username=request.user.username)
-        
-        # Check if user already has a pending verification
+
         existing_verification = ChefVerification.objects.filter(
             user=request.user, 
             status='pending'
@@ -902,8 +828,7 @@ def chef_verification(request):
         if existing_verification:
             messages.info(request, 'You already have a pending verification request')
             return redirect('profile_with_username', username=request.user.username)
-        
-        # Process the verification submission
+
         try:
             full_name = request.POST.get('full_name')
             current_position = request.POST.get('current_position')
@@ -913,8 +838,7 @@ def chef_verification(request):
             
             if not certificate_file:
                 raise ValueError("Certificate file is required")
-            
-            # Create verification request
+
             verification = ChefVerification(
                 user=request.user,
                 full_name=full_name,
@@ -924,12 +848,9 @@ def chef_verification(request):
                 certificate=certificate_file
             )
             verification.save()
-            
-            # Show success message
+
             messages.success(request, 'Your chef verification request has been submitted. Our team will review it shortly.')
-            
-            # Send notification to admins (optional)
-            # You could implement email notifications here
+
             
             return redirect('profile_with_username', username=request.user.username)
             
@@ -937,7 +858,6 @@ def chef_verification(request):
             messages.error(request, f'Error submitting verification: {str(e)}')
             return redirect('profile_with_username', username=request.user.username)
     
-    # If not POST, redirect to profile
     return redirect('profile_with_username', username=request.user.username)
 
 @login_required
@@ -945,12 +865,10 @@ def collection_share(request, pk):
     """View for sharing a collection"""
     collection = get_object_or_404(Collection, pk=pk)
     
-    # Ensure only the collection owner can share it
     if request.user != collection.user:
         messages.error(request, "You don't have permission to share this collection.")
         return redirect('collection_detail', pk=pk)
     
-    # Generate a shareable URL that works even for private collections
     share_url = request.build_absolute_uri(reverse('collection_detail', args=[pk]))
     
     context = {

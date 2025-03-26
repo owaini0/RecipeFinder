@@ -68,14 +68,13 @@ class RecipeForm(forms.ModelForm):
     
     def clean_title(self):
         title = self.cleaned_data.get('title')
-        # Generate a unique slug from title
         from django.utils.text import slugify
         import itertools
         
         max_length = Recipe._meta.get_field('slug').max_length
         slug_candidate = slug_original = slugify(title)[:max_length]
         
-        if not self.instance.pk:  # Only check for uniqueness if this is a new recipe
+        if not self.instance.pk:
             for i in itertools.count(1):
                 if not Recipe.objects.filter(slug=slug_candidate).exists():
                     break
@@ -95,7 +94,6 @@ class RecipeImageForm(forms.ModelForm):
     def clean_image(self):
         image = self.cleaned_data.get('image')
         if image:
-            # Check file extension
             import os
             ext = os.path.splitext(image.name)[1].lower()
             valid_image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
@@ -107,17 +105,13 @@ class RecipeImageForm(forms.ModelForm):
                     f"Unsupported file extension. Please use one of: {', '.join(valid_image_extensions)} for images or {', '.join(valid_video_extensions)} for videos"
                 )
             
-            # Check file size (increased to 200MB)
+            # Check file size
             if image.size > 200 * 1024 * 1024:  # 200MB limit
                 raise forms.ValidationError("File too large. Keep it under 200MB.")
             
             return image
-        
-        # When editing, an image might not be required
         if hasattr(self, 'instance') and self.instance.pk:
             return self.instance.image
-            
-        # For new recipes, image is not strictly required
         return None
 
 class RecipeVideoForm(forms.ModelForm):
@@ -140,17 +134,14 @@ class RecipeVideoForm(forms.ModelForm):
                     f"Unsupported file extension. Please use one of: {', '.join(valid_extensions)}"
                 )
             
-            # Check file size (increased to 200MB)
-            if video.size > 200 * 1024 * 1024:  # 200MB limit
+            if video.size > 200 * 1024 * 1024:
                 raise forms.ValidationError("Video file too large. Keep it under 200MB.")
             
             return video
         
-        # When editing, a video might not be required
         if hasattr(self, 'instance') and self.instance.pk:
             return self.instance.video
             
-        # For new recipes, video is not strictly required
         return None
 
 class CommentForm(forms.ModelForm):
