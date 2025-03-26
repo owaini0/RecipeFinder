@@ -20,7 +20,6 @@
     color: var(--primary-color);
 }
 
-/* Form elements */
 .form-group {
     margin-bottom: 20px;
 }
@@ -56,7 +55,6 @@
     outline: none;
 }
 
-/* Card components */
 .card {
     background: var(--light-color);
     border-radius: 15px;
@@ -65,7 +63,6 @@
     transition: transform 0.3s ease;
 }
 
-/* Notifications */
 .alert {
     padding: 15px;
     border-radius: 8px;
@@ -97,7 +94,6 @@
     opacity: 0.5;
 }
 
-/* Navigation elements */
 .nav-link {
     text-decoration: none;
     color: var(--text-color);
@@ -130,7 +126,6 @@
     color: white;
 }
 
-/* Toast notifications */
 #toast-container {
     position: fixed;
     top: 20px;
@@ -215,7 +210,6 @@
     }
 }
 
-/* Mobile responsiveness */
 @media (max-width: 576px) {
     #toast-container {
         top: 10px;

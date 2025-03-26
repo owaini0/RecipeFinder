@@ -1,12 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Remove form state management code that used localStorage
-    
-    // Helper function to check if Select2 is initialized on an element
     function isSelect2Initialized(element) {
         return $(element).hasClass('select2-hidden-accessible');
     }
     
-    // Safely get Select2 data
     function getSelect2Data(element) {
         try {
             if (isSelect2Initialized(element)) {
@@ -19,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Get current step index
     function getCurrentStep() {
         const visibleStep = Array.from(document.querySelectorAll('.form-step')).findIndex(step => {
             const display = window.getComputedStyle(step).display;
@@ -28,7 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return visibleStep >= 0 ? visibleStep : 0;
     }
     
-    // Get ingredient values
     function getIngredientValues() {
         const ingredients = [];
         document.querySelectorAll('.ingredient-input').forEach(input => {
@@ -39,7 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return ingredients;
     }
     
-    // Get instruction values
     function getInstructionValues() {
         const instructions = [];
         document.querySelectorAll('.instruction-input').forEach(textarea => {
@@ -50,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return instructions;
     }
     
-    // Character counters
     const titleInput = document.getElementById('id_title');
     const descriptionInput = document.getElementById('id_description');
     const titleChars = document.getElementById('title-chars');
@@ -60,7 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
         titleInput.addEventListener('input', function() {
             titleChars.textContent = this.value.length;
         });
-        // Initialize counter
         titleChars.textContent = titleInput.value.length;
     }
     
@@ -68,17 +59,14 @@ document.addEventListener('DOMContentLoaded', function() {
         descriptionInput.addEventListener('input', function() {
             descriptionChars.textContent = this.value.length;
         });
-        // Initialize counter
         descriptionChars.textContent = descriptionInput.value.length;
     }
     
-    // Multi-step form navigation
     const formSteps = document.querySelectorAll('.form-step');
     const progressSteps = document.querySelectorAll('.progress-step');
     const nextButtons = document.querySelectorAll('.next-step');
     const prevButtons = document.querySelectorAll('.prev-step');
     
-    // Show a specific step
     function showStep(stepIndex) {
         formSteps.forEach((step, index) => {
             step.style.display = index === stepIndex ? 'block' : 'none';
@@ -92,14 +80,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Scroll to top of form
         window.scrollTo({
             top: document.querySelector('.recipe-form-container').offsetTop - 20,
             behavior: 'smooth'
         });
     }
     
-    // Next button click handler
     if (nextButtons) {
         nextButtons.forEach(button => {
             button.addEventListener('click', function() {
@@ -110,25 +96,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (validateStep(currentStep)) {
                     showStep(nextStep);
                     
-                    // Show step transition notification
                     try {
                         const stepNames = ['Basic Information', 'Ingredients & Instructions', 'Images & Media'];
                         if (typeof Notify !== 'undefined') {
                         Notify.info(`Moving to: ${stepNames[nextStep]}`);
                         } else {
-                            // Fallback if Notify is not defined
                             console.log(`Moving to: ${stepNames[nextStep]}`);
                         }
                     } catch (e) {
                         console.warn('Could not show notification:', e);
-                        // Continue regardless of notification error
                     }
                 }
             });
         });
     }
     
-    // Previous button click handler
     if (prevButtons) {
         prevButtons.forEach(button => {
             button.addEventListener('click', function() {
@@ -140,9 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Validate each step
     function validateStep(stepIndex) {
-        // Basic info validation
         if (stepIndex === 0) {
             const title = document.getElementById('id_title').value.trim();
             const description = document.getElementById('id_description').value.trim();
@@ -175,24 +155,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             
-            // Check if at least one category is selected
             let categorySelected = false;
             
             try {
-                // Try Select2 method first
                 const categorySelect = $('#id_categories');
                 if (isSelect2Initialized(categorySelect)) {
                     const selectedCategories = categorySelect.select2('data');
                     categorySelected = selectedCategories && selectedCategories.length > 0;
                 } else {
-                    // If Select2 not initialized, check the regular select
                     console.log('Select2 not initialized, checking regular select');
                     const selectedOptions = document.querySelectorAll('#id_categories option:checked');
                     categorySelected = selectedOptions.length > 0;
                 }
             } catch (e) {
                 console.warn('Error validating categories:', e);
-                // Fallback to checking regular select
                 const selectedOptions = document.querySelectorAll('#id_categories option:checked');
                 categorySelected = selectedOptions.length > 0;
             }
@@ -203,7 +179,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Ingredients & instructions validation
         if (stepIndex === 1) {
             const ingredientItems = document.querySelectorAll('.ingredient-item .ingredient-input');
             const instructionItems = document.querySelectorAll('.instruction-item .instruction-input');
@@ -228,14 +203,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             
-            // Ensure ingredients and instructions are updated in the hidden field
             updateIngredientsField();
             updateInstructionsField();
         }
         
-        // Images validation - explicitly make it optional
         if (stepIndex === 2) {
-            // No validation required - images are optional
             return true;
         }
         
@@ -247,22 +219,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof Notify !== 'undefined') {
             Notify.error(message);
         } else {
-                // Fallback if Notify is not defined
             alert(message);
-                // Log the error to console as well
                 console.error('Form error:', message);
                 }
             } catch (e) {
-            // Ultimate fallback if anything fails
             alert(message);
             console.error('Error showing notification:', e, 'Original message:', message);
         }
     }
     
-    // Initialize to first step
     showStep(0);
-    
-    // Dynamic ingredient fields
     const ingredientsList = document.querySelector('.ingredients-list');
     const addIngredientBtn = document.querySelector('.add-ingredient-btn');
     
@@ -288,17 +254,13 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             ingredientsList.appendChild(newItem);
-            
-            // Add event listener to new ingredient input
             const newInput = newItem.querySelector('.ingredient-input');
             newInput.addEventListener('input', function() {
                 updateIngredientsField();
             });
             
-            // Focus the new input
             newInput.focus();
             
-            // Add event listener to remove button
             const removeBtn = newItem.querySelector('.remove-item-btn');
             removeBtn.addEventListener('click', function() {
                 newItem.remove();
@@ -306,14 +268,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Add event listeners to existing ingredient inputs
         document.querySelectorAll('.ingredient-input').forEach(input => {
             input.addEventListener('input', function() {
                 updateIngredientsField();
             });
         });
         
-        // Add event listeners to existing remove buttons
         document.querySelectorAll('.ingredient-item .remove-item-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 this.closest('.ingredient-item').remove();
@@ -324,7 +284,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize from existing ingredients if present
         const ingredientsField = document.getElementById('id_ingredients');
         if (ingredientsField && ingredientsField.value) {
-            // Clear any existing ingredient items
             ingredientsList.innerHTML = '';
             
             const ingredients = ingredientsField.value.split('\n');
@@ -338,14 +297,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
                     
                     ingredientsList.appendChild(newItem);
-                    
-                    // Add event listener to input
                     const input = newItem.querySelector('.ingredient-input');
                     input.addEventListener('input', function() {
                         updateIngredientsField();
                     });
                     
-                    // Add event listener to remove button
                     const removeBtn = newItem.querySelector('.remove-item-btn');
                     removeBtn.addEventListener('click', function() {
                         newItem.remove();
@@ -356,7 +312,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Dynamic instruction fields
     const instructionsList = document.querySelector('.instructions-list');
     const addInstructionBtn = document.querySelector('.add-instruction-btn');
     
@@ -371,7 +326,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('id_instructions').value = instructions.join('\n');
         
-        // Update step numbers
         document.querySelectorAll('.instruction-item').forEach((item, index) => {
             item.querySelector('.step-number').textContent = index + 1;
         });
@@ -382,7 +336,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const newItem = document.createElement('div');
             newItem.className = 'instruction-item';
             
-            // Calculate the next step number
             const stepNumber = document.querySelectorAll('.instruction-item').length + 1;
             
             newItem.innerHTML = `
@@ -393,16 +346,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             instructionsList.appendChild(newItem);
             
-            // Add event listener to new instruction textarea
             const newTextarea = newItem.querySelector('.instruction-input');
             newTextarea.addEventListener('input', function() {
                 updateInstructionsField();
             });
             
-            // Focus the new textarea
             newTextarea.focus();
             
-            // Add event listener to remove button
             const removeBtn = newItem.querySelector('.remove-item-btn');
             removeBtn.addEventListener('click', function() {
                 newItem.remove();
@@ -410,14 +360,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Add event listeners to existing instruction textareas
         document.querySelectorAll('.instruction-input').forEach(textarea => {
             textarea.addEventListener('input', function() {
                 updateInstructionsField();
             });
         });
         
-        // Add event listeners to existing remove buttons
         document.querySelectorAll('.instruction-item .remove-item-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 this.closest('.instruction-item').remove();
@@ -425,10 +373,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Initialize from existing instructions if present
         const instructionsField = document.getElementById('id_instructions');
         if (instructionsField && instructionsField.value) {
-            // Clear any existing instruction items
             instructionsList.innerHTML = '';
             
             const instructions = instructionsField.value.split('\n');
@@ -444,13 +390,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     instructionsList.appendChild(newItem);
                     
-                    // Add event listener to textarea
                     const textarea = newItem.querySelector('.instruction-input');
                     textarea.addEventListener('input', function() {
                         updateInstructionsField();
                     });
                     
-                    // Add event listener to remove button
                     const removeBtn = newItem.querySelector('.remove-item-btn');
                     removeBtn.addEventListener('click', function() {
                         newItem.remove();
@@ -461,38 +405,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Image preview
     const imageInput = document.getElementById('id_image');
     const imageDropzone = document.getElementById('image-dropzone');
     const imagePreviews = document.getElementById('image-previews');
     
     if (imageInput && imageDropzone && imagePreviews) {
-        // Handle file selection
         imageInput.addEventListener('change', function() {
             if (this.files && this.files.length > 0) {
-                // Process each file
                 for (let i = 0; i < this.files.length; i++) {
                     const file = this.files[i];
-                    
-                    // Validate file type
                     const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
                     if (!validImageTypes.includes(file.type)) {
                         showError(`Invalid file type: ${file.name}. Please upload a valid image (JPEG, PNG, GIF, WebP or BMP).`);
-                        continue; // Skip this file but continue with others
+                        continue;
                     }
                     
-                    // Validate file size (max 10MB)
-                    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+                    const maxSize = 10 * 1024 * 1024;
                     if (file.size > maxSize) {
                         showError(`Image too large: ${file.name}. Maximum size is 10MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
-                        continue; // Skip this file but continue with others
+                        continue;
                     }
                     
-                    // Create preview for this file
                     createPreviewItem(file);
                 }
                 
-                // Hide dropzone if we have previews
                 if (imagePreviews.children.length > 0) {
                     imageDropzone.style.display = 'none';
                     imagePreviews.style.display = 'grid';
@@ -500,7 +436,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Function to create a preview item
         function createPreviewItem(file) {
             const reader = new FileReader();
             
@@ -518,17 +453,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 removeBtn.type = 'button';
                 removeBtn.innerHTML = '<i class="fas fa-times"></i>';
                 removeBtn.addEventListener('click', function() {
-                    // Remove this preview
+
                     previewItem.remove();
                     
-                    // Show dropzone if no more previews
                     if (imagePreviews.children.length === 0) {
                         imageDropzone.style.display = 'block';
                         imagePreviews.style.display = 'none';
                     }
-                    
-                    // Note: we can't truly remove a file from the FileList, 
-                    // we'll handle this in the form submission
+
                 });
                 
                 previewItem.appendChild(img);
@@ -539,12 +471,10 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsDataURL(file);
         }
         
-        // Handle dropzone click
         imageDropzone.addEventListener('click', function() {
             imageInput.click();
         });
-        
-        // Handle drag and drop
+
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             imageDropzone.addEventListener(eventName, preventDefaults, false);
         });
@@ -577,32 +507,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = dt.files;
             
             if (files && files.length > 0) {
-                // Process each dropped file
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
                     
-                    // Validate file type
                     const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
                     if (!validImageTypes.includes(file.type)) {
                         showError(`Invalid file type: ${file.name}. Please upload a valid image (JPEG, PNG, GIF, WebP or BMP).`);
-                        continue; // Skip this file but continue with others
+                        continue;
                     }
                     
-                    // Validate file size (max 10MB)
-                    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+                    const maxSize = 10 * 1024 * 1024;
                     if (file.size > maxSize) {
                         showError(`Image too large: ${file.name}. Maximum size is 10MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
-                        continue; // Skip this file but continue with others
+                        continue;
                     }
-                    
-                    // Create preview for this file
+
                     createPreviewItem(file);
                 }
-                
-                // We don't update the file input directly because FileList is read-only
-                // Instead, we'll handle the uploaded files during form submission
-                
-                // Hide dropzone if we have previews
+
                 if (imagePreviews.children.length > 0) {
                     imageDropzone.style.display = 'none';
                     imagePreviews.style.display = 'grid';
@@ -611,40 +533,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Form submission with validation
     const recipeForm = document.getElementById('recipe-form');
     
     if (recipeForm) {
         recipeForm.addEventListener('submit', async function(e) {
-            e.preventDefault(); // Prevent form submission initially
-            
-            // Update hidden fields
+            e.preventDefault();
             updateIngredientsField();
             updateInstructionsField();
             
-            // Final validation check for categories
             let categorySelected = false;
             
             try {
-                // Try Select2 method first
+
                 const categorySelect = $('#id_categories');
                 if (isSelect2Initialized(categorySelect)) {
                     const selectedCategories = categorySelect.select2('data');
                     categorySelected = selectedCategories && selectedCategories.length > 0;
-                    
-                    // Check for new categories that need to be created
                     const newCategories = selectedCategories.filter(cat => cat.id && cat.id.toString().startsWith('new:'));
                     
-                    // If there are new categories, create them first
                     if (newCategories.length > 0) {
                         showLoader('Creating new categories...');
                         
-                        // Process new categories one by one
                         for (const newCat of newCategories) {
                             const categoryName = newCat.text.replace(' (New)', '');
                             
                             try {
-                                // Create the category via API
                                 const formData = new FormData();
                                 formData.append('name', categoryName);
                                 
@@ -660,13 +573,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     const data = await response.json();
                                     
                                     if (data.success) {
-                                        // Replace the temporary ID with the real one
                                         const index = selectedCategories.findIndex(cat => cat.id === newCat.id);
                                         if (index !== -1) {
-                                            // Remove the temporary option
                                             categorySelect.find(`option[value="${newCat.id}"]`).remove();
-                                            
-                                            // Add the new option with the real ID
                                             const newOption = new Option(data.category.name, data.category.id, true, true);
                                             categorySelect.append(newOption);
                                         }
@@ -683,49 +592,41 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return false;
                             }
                         }
-                        
                         hideLoader();
                     }
                 } else {
-                    // If Select2 not initialized, check the regular select
                     console.log('Select2 not initialized, checking regular select');
                     const selectedOptions = document.querySelectorAll('#id_categories option:checked');
                     categorySelected = selectedOptions.length > 0;
                 }
             } catch (e) {
                 console.warn('Error checking categories during submission:', e);
-                // Fallback to checking regular select
                 const selectedOptions = document.querySelectorAll('#id_categories option:checked');
                 categorySelected = selectedOptions.length > 0;
             }
             
             if (!categorySelected) {
                 showError('Please select at least one category');
-                showStep(0); // Go back to first step where categories are
+                showStep(0);
                 return false;
             }
             
-            // Validate final step if we're on it
             const visibleStep = Array.from(formSteps).findIndex(step => 
                 step.style.display === 'block' || step.style.display === '');
                 
             if (visibleStep === formSteps.length - 1 && !validateStep(visibleStep)) {
                 return false;
             }
-            
-            // If everything is valid, submit the form
+
             this.submit();
         });
     }
-    
-    // Helper function to get CSRF token
+
     function getCsrfToken() {
         return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
     }
     
-    // Helper functions for loader
     function showLoader(message) {
-        // Create loader if it doesn't exist
         let loader = document.getElementById('form-loader');
         if (!loader) {
             loader = document.createElement('div');
@@ -748,7 +649,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.appendChild(loader);
         }
         
-        // Update message and show loader
         const messageEl = loader.querySelector('.loader-message');
         messageEl.textContent = message || 'Processing...';
         loader.style.display = 'flex';
@@ -761,7 +661,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Add initial ingredient and instruction items if needed
     if (ingredientsList && !ingredientsList.querySelector('.ingredient-item')) {
         addIngredientBtn.click();
     }

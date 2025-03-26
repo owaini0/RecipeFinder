@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Add hover effects to recipe cards
     const recipeCards = document.querySelectorAll('.recipe-card');
     
     recipeCards.forEach(card => {
@@ -14,13 +13,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Smooth scroll for pagination links
     const paginationLinks = document.querySelectorAll('.pagination a');
     
     paginationLinks.forEach(link => {
         link.addEventListener('click', function(e) {
-            // Don't prevent default as we want the page to navigate
-            // Just add a small visual effect
+
             document.querySelector('.category-recipes').classList.add('fade-transition');
             
             setTimeout(() => {
@@ -28,8 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 500);
         });
     });
-    
-    // Add CSS for fade transition if not already in stylesheet
+
     if (!document.querySelector('#fade-transition-style')) {
         const style = document.createElement('style');
         style.id = 'fade-transition-style';
@@ -62,8 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.boxShadow = 'none';
         });
     }
-    
-    // Lazy loading for images with IntersectionObserver
+
     if ('IntersectionObserver' in window) {
         const imageObserver = new IntersectionObserver((entries, observer) => {
             entries.forEach(entry => {
@@ -78,21 +73,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
-        
-        // Create a loading placeholder effect
+
         const lazyImages = document.querySelectorAll('.recipe-image img');
         lazyImages.forEach(img => {
             if (img.complete && img.naturalHeight !== 0) return;
             if (img.src) {
-                // Add a loading class for styling
                 img.classList.add('loading');
                 img.dataset.src = img.src;
                 img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"%3E%3C/svg%3E';
                 imageObserver.observe(img);
             }
         });
-        
-        // Add loading/loaded animation styles
+
         if (!document.querySelector('#lazy-load-styles')) {
             const style = document.createElement('style');
             style.id = 'lazy-load-styles';
@@ -114,8 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.head.appendChild(style);
         }
     }
-    
-    // Add simple filter by difficulty functionality
+
     const createDifficultyFilter = () => {
         const categoryHeader = document.querySelector('.category-header');
         if (!categoryHeader) return;
@@ -133,8 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         
         categoryHeader.appendChild(filterContainer);
-        
-        // Add filter styles
         if (!document.querySelector('#filter-styles')) {
             const style = document.createElement('style');
             style.id = 'filter-styles';
@@ -177,17 +166,14 @@ document.addEventListener('DOMContentLoaded', function() {
             document.head.appendChild(style);
         }
         
-        // Add filter functionality
         const filterButtons = document.querySelectorAll('.filter-btn');
         filterButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Update active button
                 filterButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
                 const difficulty = btn.getAttribute('data-difficulty');
-                
-                // Filter recipe cards
+
                 recipeCards.forEach(card => {
                     if (difficulty === 'all') {
                         card.classList.remove('hidden');
@@ -201,14 +187,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
                 
-                // Update recipe count
                 const visibleCount = document.querySelectorAll('.recipe-card:not(.hidden)').length;
                 const countElem = document.querySelector('.recipes-count p');
                 if (countElem) {
                     countElem.textContent = `${visibleCount} recipe${visibleCount !== 1 ? 's' : ''} found`;
                 }
-                
-                // Show notification about filter applied
+
                 if (typeof Notify !== 'undefined') {
                     if (difficulty === 'all') {
                         Notify.info('Showing all recipes');
@@ -216,8 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         Notify.info(`Filtered to show ${difficulty} difficulty recipes`);
                     }
                 }
-                
-                // Show/hide "no recipes" message
+
                 const noRecipesDiv = document.querySelector('.no-recipes') || 
                     createNoRecipesMessage();
                 
@@ -226,8 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (recipesGrid) {
                         recipesGrid.insertAdjacentElement('afterend', noRecipesDiv);
                         recipesGrid.style.display = 'none';
-                        
-                        // Show warning notification when no recipes match filter
+
                         if (typeof Notify !== 'undefined') {
                             Notify.warning('No recipes match the selected filter. Try a different difficulty level.');
                         }
@@ -244,8 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     };
-    
-    // Create a "no recipes" message for filtered results
+
     const createNoRecipesMessage = () => {
         const noRecipes = document.createElement('div');
         noRecipes.className = 'no-recipes';
@@ -256,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         return noRecipes;
     };
-    
-    // Initialize difficulty filter
+
     createDifficultyFilter();
 });

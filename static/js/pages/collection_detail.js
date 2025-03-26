@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Add animation effects for recipe cards
+
     const recipeCards = document.querySelectorAll('.recipe-card');
     
     if (recipeCards.length > 0) {
-        // Add staggered animation for recipe cards on page load
+
         recipeCards.forEach((card, index) => {
             setTimeout(() => {
                 card.style.opacity = '1';
@@ -11,30 +11,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100 * index);
         });
     }
-    
-    // Handle removing recipes from collection
+
     document.querySelectorAll('.remove-from-collection').forEach(button => {
         button.addEventListener('click', function() {
             const recipeId = this.getAttribute('data-recipe-id');
             const collectionId = this.getAttribute('data-collection-id');
             const recipeCard = this.closest('.recipe-card');
             const recipeName = recipeCard.querySelector('h3 a')?.textContent || 'this recipe';
-            
-            // Create and show a modal confirmation dialog
+
             showConfirmationModal(
                 `Remove Recipe`, 
                 `Are you sure you want to remove "${recipeName}" from this collection?`, 
                 function() {
-                    // Yes callback
                     removeRecipeFromCollection(recipeId, collectionId, recipeCard);
                 }
             );
         });
     });
-    
-    // Function to create and show a confirmation modal
+
     function showConfirmationModal(title, message, onConfirm) {
-        // Create modal elements
+
         const modalOverlay = document.createElement('div');
         modalOverlay.className = 'modal-overlay';
         modalOverlay.style.position = 'fixed';
@@ -104,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnYes.style.borderRadius = '4px';
         btnYes.style.cursor = 'pointer';
         
-        // Assemble the modal
+        
         modalHeader.appendChild(modalTitle);
         modalBody.appendChild(modalMessage);
         modalFooter.appendChild(btnNo);
@@ -117,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modalOverlay.appendChild(modalContent);
         document.body.appendChild(modalOverlay);
         
-        // Add keyframe animation for fade in effect
+
         const style = document.createElement('style');
         style.type = 'text/css';
         style.innerHTML = `
@@ -128,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         document.head.appendChild(style);
         
-        // Add event listeners for buttons
+
         btnNo.addEventListener('click', function() {
             document.body.removeChild(modalOverlay);
         });
@@ -140,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Also allow clicking outside to close
+
         modalOverlay.addEventListener('click', function(e) {
             if (e.target === modalOverlay) {
                 document.body.removeChild(modalOverlay);
@@ -148,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Function to handle the actual removal
+
     function removeRecipeFromCollection(recipeId, collectionId, recipeCard) {
         fetch('/add-to-collection/', {
             method: 'POST',
@@ -161,23 +157,21 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (!data.in_collection) {
-                // Add removal animation
+
                 recipeCard.style.transform = 'scale(0.8)';
                 recipeCard.style.opacity = '0';
                 
-                // Show success notification
+
                 if (typeof Notify !== 'undefined') {
                     Notify.success(StandardMessages.RECIPE_REMOVED_FROM_COLLECTION || 'Recipe removed from collection');
                 }
                 
-                // Remove the card after animation completes
                 setTimeout(() => {
                     recipeCard.remove();
                     
-                    // Check if there are any recipes left
                     const remainingCards = document.querySelectorAll('.recipe-card');
                     if (remainingCards.length === 0) {
-                        // If there are no recipes left, refresh to show empty state
+
                         window.location.reload();
                     }
                 }, 300);
@@ -191,7 +185,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Add hover effects for collection metadata
     const metaItems = document.querySelectorAll('.collection-meta span');
     metaItems.forEach(item => {
         item.addEventListener('mouseover', function() {

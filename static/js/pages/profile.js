@@ -1,28 +1,22 @@
 $(document).ready(function() {
     console.log("Profile page JS initialized");
     
-    // Tab functionality
     $('.tab').click(function() {
         const tabId = $(this).data('tab');
         
-        // Update active tab
         $('.tab').removeClass('active');
         $(this).addClass('active');
         
-        // Show selected content
         $('.tab-content').removeClass('active');
         $(`#${tabId}-tab`).addClass('active');
     });
 
-    // Function to get CSRF token - using the global utils function if available
     function getCsrfToken() {
-        // Use the global utils.getCsrfToken if available
         if (typeof utils !== 'undefined' && typeof utils.getCsrfToken === 'function') {
             return utils.getCsrfToken();
         }
         
         console.log("Falling back to local CSRF token implementation");
-        // Fallback implementation
         try {
             const cookieMatch = document.cookie.match(/csrftoken=([^;]+)/);
             if (cookieMatch) {
@@ -47,9 +41,7 @@ $(document).ready(function() {
         return '';
     }
 
-    // Refresh follower count on page load if viewing a profile
     function refreshFollowerCount() {
-        // Check if we're on a profile page and get the user ID
         const followBtn = $('.follow-btn');
         if (followBtn.length > 0) {
             const userId = followBtn.data('user-id');
@@ -65,7 +57,6 @@ $(document).ready(function() {
                     success: function(data) {
                         console.log("Follow status data:", data);
                         
-                        // Update followers count
                         if (data.followers_count !== undefined) {
                             const followersCount = $('.stat:nth-child(2) .stat-value');
                             if (followersCount.length > 0) {
@@ -74,7 +65,6 @@ $(document).ready(function() {
                             }
                         }
                         
-                        // Update following count
                         if (data.following_count !== undefined) {
                             const followingCount = $('.stat:nth-child(3) .stat-value');
                             if (followingCount.length > 0) {
@@ -83,7 +73,6 @@ $(document).ready(function() {
                             }
                         }
                         
-                        // Update button state
                         if (data.following) {
                             followBtn.html('<i class="fas fa-user-minus"></i> Unfollow');
                             followBtn.addClass('following');
